@@ -19,7 +19,6 @@ with DAG('meeting_video_summarization_dag', default_args=default_args, default_v
     operators_module = importlib.import_module('operators.generate_open_ai_summary_operator')
     GenerateOpenAISummaryOperator = operators_module.GenerateOpenAISummaryOperator
 
-    # Define the tasks for each operator
     # Download and Transcribe Task
     download_and_transcribe = DownloadAndTranscribeOperator(
         task_id='download_and_transcribe',
