@@ -1,4 +1,6 @@
 flask==3.0.0
 requests==2.31.0
-pymongo==4.5.0
+pymongo==4.0.1
+minio==7.1.17
+elasticsearch==7.17.9
 gunicorn
