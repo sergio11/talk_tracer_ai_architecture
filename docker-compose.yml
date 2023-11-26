@@ -1,0 +1,235 @@
+version: '3.6'
+
+# Define named volumes for persistent data
+volumes:
+  apache-airflow_data:
+    driver: local
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+  mongo_data:
+    driver: local
+  minio-data-1:
+    driver: local
+  minio-data-2:
+    driver: local
+  minio-data-3:
+    driver: local
+  elasticsearch-data:
+    driver: local
+
+networks:
+  talk_tracer_ai_network:
+
+services:
+
+  # Elasticsearch is a powerful open source search and analytics engine that makes data easy to explore.
+  talk_tracer_ai_elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.6.2
+    container_name: talk-tracer-ai-elasticsearch
+    environment:
+      - ELASTIC_PASSWORD=ssanchez00
+      - "ES_JAVA_OPTS=-Xmx256m -Xms256m"
+      - discovery.type=single-node
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - talk_tracer_ai_network
+
+  talk_tracer_ai_minio1:
+    image: minio/minio
+    container_name: talk-tracer-ai-minio-1
+    env_file:
+      - .env
+    volumes:
+      - minio-data-1:/data
+    command: server http://talk-tracer-ai-minio-{1...3}/data
+    networks:
+      - talk_tracer_ai_network
+
+  talk_tracer_ai_minio2:
+    image: minio/minio
+    container_name: talk-tracer-ai-minio-2
+    env_file:
+      - .env
+    volumes:
+      - minio-data-2:/data
+    command: server http://talk-tracer-ai-minio-{1...3}/data
+    networks:
+      - talk_tracer_ai_network
+
+  talk_tracer_ai_minio3:
+    image: minio/minio
+    container_name: talk-tracer-ai-minio-3
+    env_file:
+      - .env
+    volumes:
+      - minio-data-3:/data
+    command: server http://talk-tracer-ai-minio-{1...3}/data
+    networks:
+      - talk_tracer_ai_network
+
+  talk_tracer_ai_haproxy:
+    image: haproxytech/haproxy-alpine:2.7
+    container_name: talk-tracer-ai-minio-haproxy
+    volumes:
+      - ./haproxy/minio/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      - '9000:9000'
+      - '1936:1936'
+    networks:
+      - talk_tracer_ai_network
+
+  # MongoDB container for Apache Airflow
+  talk_tracer_ai_mongo:
+    container_name: talk-tracer-ai-mongo
+    image: mongo
+    env_file:
+      - .env
+    ports:
+      - "27017:27017"
+    networks:
+      - talk_tracer_ai_network
+
+  # Web-based MongoDB admin interface, written with Node.js and express
+  talk_tracer_ai_mongo_express:
+    image: mongo-express
+    container_name: talk-tracer-ai-mongo-express
+    restart: on-failure
+    env_file:
+      - .env
+    depends_on:
+      - talk_tracer_ai_mongo
+    ports:
+      - "8087:8081"
+    networks:
+      - talk_tracer_ai_network
+
+  # Redis container for Apache Airflow's message broker
+  talk_tracer_ai_redis:
+    image: redis:5.0.5
+    container_name: talk-tracer-ai-redis
+    restart: always
+    networks:
+      - talk_tracer_ai_network
+    
+  # PostgreSQL database container for Apache Airflow
+  talk_tracer_ai_postgres:
+    image: postgres:13
+    container_name: talk-tracer-ai-postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    networks:
+      - talk_tracer_ai_network
+
+  # pgAdmin container for managing the PostgreSQL database
+  talk_tracer_ai_pgadmin:
+    image: dpage/pgadmin4
+    container_name: talk-tracer-ai-pgadmin
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - 8085:80
+    volumes:
+      - ./pgadmin_data:/var/lib/pgadmin
+    networks:
+      - talk_tracer_ai_network
+
+  # Apache Airflow webserver container
+  talk_tracer_ai_airflow_webserver:
+    image: ssanchez11/lyric_wave_apache_airflow:0.0.1
+    container_name: talk-tracer-ai-airflow-webserver
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - talk_tracer_ai_postgres
+      - talk_tracer_ai_redis
+    volumes:
+      - ./airflow/dags:/usr/local/airflow/dags
+      - ./airflow/packages:/usr/local/airflow/packages
+    ports:
+      - "8080:8080"
+    command: webserver
+    healthcheck:
+      test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    networks:
+      - talk_tracer_ai_network
+
+  # Flower is a web-based tool for monitoring and administrating Celery clusters.
+  talk_tracer_ai_celery_flower:
+    image: ssanchez11/lyric_wave_apache_airflow:0.0.1
+    container_name: talk-tracer-ai-celery-flower
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - talk_tracer_ai_redis
+    ports:
+      - "8081:5555"
+      - "8082:8080"
+      - "8083:8793"
+    command: flower
+    networks:
+      - talk_tracer_ai_network
+
+  # Apache Airflow scheduler container
+  talk_tracer_ai_airflow_scheduler:
+    image: ssanchez11/lyric_wave_apache_airflow:0.0.1
+    container_name: talk-tracer-ai-airflow-scheduler
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - talk_tracer_ai_airflow_webserver
+    volumes:
+      - ./airflow/dags:/usr/local/airflow/dags
+      - ./airflow/packages:/usr/local/airflow/packages
+    ports:
+      - "8084:8080"
+    command: scheduler
+    networks:
+      - talk_tracer_ai_network
+
+  # Apache Airflow worker containers
+  talk_tracer_ai_airflow_worker_1:
+    image: ssanchez11/lyric_wave_apache_airflow:0.0.1
+    container_name: talk-tracer-ai-airflow-worker-1
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - talk_tracer_ai_airflow_scheduler
+    volumes:
+      - ./airflow/dags:/usr/local/airflow/dags
+      - ./airflow/packages:/usr/local/airflow/packages
+    command: worker
+    networks:
+      - talk_tracer_ai_network
+
+  # Apache Airflow worker containers
+  talk_tracer_ai_airflow_worker_2:
+    image: ssanchez11/lyric_wave_apache_airflow:0.0.1
+    container_name: talk-tracer-ai-airflow-worker-2
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - talk_tracer_ai_airflow_scheduler
+    volumes:
+      - ./airflow/dags:/usr/local/airflow/dags
+      - ./airflow/packages:/usr/local/airflow/packages
+    command: worker
+    networks:
+      - talk_tracer_ai_network
