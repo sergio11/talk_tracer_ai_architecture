@@ -75,6 +75,20 @@ namespace :talktracerai do
       puts "Apache Airflow image built and pushed successfully."
     end
 
+    # Build and push TalkTracerAI MeetingFlow Orchestrator API Docker image
+    desc "Build and push TalkTracerAI MeetingFlow Orchestrator API Docker image"
+    task :build_and_push_meeting_flow_orchestrator_api_image do
+      api_image_name = "ssanchez11/talk_tracer_ai_meeting_flow_orchestrator_api:0.0.1"
+      api_directory = "./api"
+      puts "Building TalkTracerAI MeetingFlow Orchestrator API Docker image..."
+      build_command = "docker build -t #{api_image_name} #{api_directory}"
+      system(build_command)
+      puts "Pushing TalkTracerAI MeetingFlow Orchestrator API Docker image to DockerHub..."
+      push_command = "docker push #{api_image_name}"
+      system(push_command)
+      puts "TalkTracerAI MeetingFlow Orchestrator API image built and pushed successfully."
+    end
+
     # Cleaning Environment task
     desc "Cleaning Environment task"
     task :clean_environment do 
