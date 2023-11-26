@@ -7,10 +7,8 @@ from bson import ObjectId
 from flask import Flask, request, jsonify
 from pymongo import MongoClient
 import os
-
 import requests
-
-from api.helpers.minio_helpers import store_file_in_minio
+from minio_helpers import store_file_in_minio
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

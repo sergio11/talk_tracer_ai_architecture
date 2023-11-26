@@ -106,7 +106,7 @@ services:
     depends_on:
       - talk_tracer_ai_mongo
     ports:
-      - "8087:8081"
+      - "9001:8081"
     networks:
       - talk_tracer_ai_network
 
@@ -137,7 +137,7 @@ services:
     env_file:
       - .env
     ports:
-      - 8085:80
+      - 9002:80
     volumes:
       - ./pgadmin_data:/var/lib/pgadmin
     networks:
@@ -145,7 +145,7 @@ services:
 
   # Apache Airflow webserver container
   talk_tracer_ai_airflow_webserver:
-    image: ssanchez11/lyric_wave_apache_airflow:0.0.1
+    image: ssanchez11/talk_tracer_ai_apache_airflow:0.0.1
     container_name: talk-tracer-ai-airflow-webserver
     restart: always
     env_file:
@@ -157,7 +157,7 @@ services:
       - ./airflow/dags:/usr/local/airflow/dags
       - ./airflow/packages:/usr/local/airflow/packages
     ports:
-      - "8080:8080"
+      - "9003:8080"
     command: webserver
     healthcheck:
       test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
@@ -169,7 +169,7 @@ services:
 
   # Flower is a web-based tool for monitoring and administrating Celery clusters.
   talk_tracer_ai_celery_flower:
-    image: ssanchez11/lyric_wave_apache_airflow:0.0.1
+    image: ssanchez11/talk_tracer_ai_apache_airflow:0.0.1
     container_name: talk-tracer-ai-celery-flower
     restart: always
     env_file:
@@ -177,16 +177,16 @@ services:
     depends_on:
       - talk_tracer_ai_redis
     ports:
-      - "8081:5555"
-      - "8082:8080"
-      - "8083:8793"
+      - "9004:5555"
+      - "9005:8080"
+      - "9006:8793"
     command: flower
     networks:
       - talk_tracer_ai_network
 
   # Apache Airflow scheduler container
   talk_tracer_ai_airflow_scheduler:
-    image: ssanchez11/lyric_wave_apache_airflow:0.0.1
+    image: ssanchez11/talk_tracer_ai_apache_airflow:0.0.1
     container_name: talk-tracer-ai-airflow-scheduler
     restart: always
     env_file:
@@ -197,14 +197,14 @@ services:
       - ./airflow/dags:/usr/local/airflow/dags
       - ./airflow/packages:/usr/local/airflow/packages
     ports:
-      - "8084:8080"
+      - "9007:8080"
     command: scheduler
     networks:
       - talk_tracer_ai_network
 
   # Apache Airflow worker containers
   talk_tracer_ai_airflow_worker_1:
-    image: ssanchez11/lyric_wave_apache_airflow:0.0.1
+    image: ssanchez11/talk_tracer_ai_apache_airflow:0.0.1
     container_name: talk-tracer-ai-airflow-worker-1
     restart: always
     env_file:
@@ -220,7 +220,7 @@ services:
 
   # Apache Airflow worker containers
   talk_tracer_ai_airflow_worker_2:
-    image: ssanchez11/lyric_wave_apache_airflow:0.0.1
+    image: ssanchez11/talk_tracer_ai_apache_airflow:0.0.1
     container_name: talk-tracer-ai-airflow-worker-2
     restart: always
     env_file:
@@ -231,5 +231,46 @@ services:
       - ./airflow/dags:/usr/local/airflow/dags
       - ./airflow/packages:/usr/local/airflow/packages
     command: worker
+    networks:
+      - talk_tracer_ai_network
+
+  # TalkTracerAI MeetingFlow Orchestrator API Service
+  talk_tracer_ai_meeting_flow_orchestrator_api_service_1:
+    image: ssanchez11/talk_tracer_ai_meeting_flow_orchestrator_api:0.0.1
+    container_name: talk-tracer-ai-meeting-flow-orchestrator-api-service-1
+    restart: always
+    env_file:
+      - .env
+    networks:
+      - talk_tracer_ai_network
+
+  # TalkTracerAI MeetingFlow Orchestrator API Service
+  talk_tracer_ai_meeting_flow_orchestrator_api_service_2:
+    image: ssanchez11/talk_tracer_ai_meeting_flow_orchestrator_api:0.0.1
+    container_name: talk-tracer-ai-meeting-flow-orchestrator-api-service-2
+    restart: always
+    env_file:
+      - .env
+    networks:
+      - talk_tracer_ai_network
+
+  # TalkTracerAI MeetingFlow Orchestrator API Service
+  talk_tracer_ai_meeting_flow_orchestrator_api_service_3:
+    image: ssanchez11/talk_tracer_ai_meeting_flow_orchestrator_api:0.0.1
+    container_name: talk-tracer-ai-meeting-flow-orchestrator-api-service-3
+    restart: always
+    env_file:
+      - .env
+    networks:
+      - talk_tracer_ai_network
+
+  talk_tracer_ai_meeting_flow_orchestrator_haproxy:
+    image: haproxytech/haproxy-alpine:2.7
+    container_name: talk-tracer-ai-meeting-flow-orchestrator-haproxy
+    volumes:
+      - ./haproxy/orchestrator/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      - '9008:5000'
+      - '1937:1936'
     networks:
       - talk_tracer_ai_network

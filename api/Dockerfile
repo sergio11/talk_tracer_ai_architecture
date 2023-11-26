@@ -6,12 +6,12 @@ WORKDIR /app
 
 # Copy the requirements file into the container
 COPY requirements.txt requirements.txt
+# Copy the API code into the container
+COPY app.py app.py
+COPY minio_helpers.py minio_helpers.py
 
 # Install dependencies
 RUN pip install -r requirements.txt
-
-# Copy the API code into the container
-COPY app.py app.py
 
 # Expose the port where the API will run
 EXPOSE 5000
