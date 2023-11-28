@@ -1,3 +1,4 @@
+from bson import ObjectId
 from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
 from pymongo import MongoClient
@@ -109,6 +110,20 @@ class BaseCustomOperator(BaseOperator):
             error_message = f"Error connecting to MinIO: {e}"
             self._log_to_mongodb(error_message, context, "ERROR")
             raise Exception(error_message)
+        
+    def _get_meeting_info(self, context, meeting_id):
+        # Get a reference to the MongoDB collection
+        collection = self._get_mongodb_collection()
+
+        # Retrieve meeting information from MongoDB based on meeting_id
+        meeting_info = collection.find_one({"_id": ObjectId(meeting_id)})
+        if meeting_info is None:
+            error_message = f"Meeting with ID {meeting_id} not found in MongoDB"
+            self._log_to_mongodb(error_message, context, "ERROR")
+            raise Exception(error_message)
+
+        self._log_to_mongodb(f"Retrieved meeting from MongoDB: {meeting_id}", context, "INFO")
+        return meeting_info
         
 
     def _store_file_in_minio(self, local_file_path, minio_object_name, context, content_type=None):

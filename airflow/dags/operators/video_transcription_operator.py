@@ -198,21 +198,12 @@ class VideoTranscriptionOperator(BaseCustomOperator):
         meeting_id = dag_run_conf['meeting_id']
         self._log_to_mongodb(f"Received meeting_id: {meeting_id}", context, "INFO")
 
-        # Get a reference to the MongoDB collection
-        collection = self._get_mongodb_collection()
-        self._log_to_mongodb("Connected to MongoDB", context, "INFO")
-
-        # Retrieve meeting information from MongoDB based on meeting_id
-        song_info = collection.find_one({"_id": ObjectId(meeting_id)})
-        if song_info is None:
-            error_message = f"Meeting with ID {meeting_id} not found in MongoDB"
-            self._log_to_mongodb(error_message, context, "ERROR")
-            raise Exception(error_message)
+        meeting_info = self._get_meeting_info(context, meeting_id)
 
         self._log_to_mongodb(f"Retrieved meeting from MongoDB: {meeting_id}", context, "INFO")
 
         # Extract video_id from meeting information
-        video_id = song_info.get('video_id')
+        video_id = meeting_info.get('video_id')
         if not video_id:
             error_message = f"No 'video_id' found in the meeting information."
             self._log_to_mongodb(error_message, context, "ERROR")
