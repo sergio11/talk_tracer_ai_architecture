@@ -145,15 +145,21 @@ class NaturalLanguageProccessingOperator(BaseCustomOperator):
         nlp = spacy.load("en_core_web_sm")
         
         # Extract key phrases using TF-IDF
+        self._log_to_mongodb("Extracting key phrases using TF-IDF...", context, "INFO")
         key_phrases = self._extract_key_phrases(nlp, transcribed_text)
 
         # Extract Named Entities using spaCy
+        self._log_to_mongodb("Extracting Named Entities using spaCy...", context, "INFO")
         named_entities = self._extract_named_entities(nlp, transcribed_text)
 
         # Extract most frequent expressions using CountVectorizer
+        self._log_to_mongodb("Extracting most frequent expressions...", context, "INFO")
         frequent_expressions = self._extract_most_frequent_expressions(nlp, transcribed_text)
 
         # Update Named Entities and Key Phrases in MongoDB document
+        self._log_to_mongodb("Updating NLP results in MongoDB document...", context, "INFO")
         self._update_nlp_results_in_mongodb(context, meeting_id, key_phrases, named_entities, frequent_expressions)
+
+        self._log_to_mongodb("Execution of NaturalLanguageProccessingOperator completed.", context, "INFO")
 
         return {"meeting_id": str(meeting_id)}
