@@ -9,7 +9,34 @@ class GenerateSummaryOperator(BaseCustomOperator):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    
+    def _save_summary_to_bson(self, context, meeting_id, summary):
+        """
+        Saves the generated summary to the BSON document in MongoDB.
+
+        Args:
+        - context: The execution context.
+        - meeting_id: The ID of the meeting.
+        - summary: The summary text to be saved.
+        """
+        collection = self._get_mongodb_collection()
+        update_result = collection.update_one(
+            {"_id": ObjectId(meeting_id)},
+            {"$set": {"summary": summary}}
+        )
+
+        if update_result.modified_count == 1:
+            self._log_to_mongodb(f"Updated document with meeting_id {meeting_id} in MongoDB", context, "INFO")
+        else:
+            self._log_to_mongodb(f"Document with meeting_id {meeting_id} not updated in MongoDB", context, "WARNING")
+
     def execute(self, context):
+        """
+        The main execution method for generating a summary.
+
+        Retrieves the meeting information, generates a summary using a summarization model,
+        and saves the summary to the BSON document in MongoDB.
+        """
         self._log_to_mongodb(f"Starting execution of GenerateSummaryOperator", context, "INFO")
         # Get the configuration passed to the DAG from the execution context
         dag_run_conf = context['dag_run'].conf
@@ -35,15 +62,7 @@ class GenerateSummaryOperator(BaseCustomOperator):
         # Generate the summary using the Hugging Face summary model with the maximum length set dynamically
         summary = summarizer(transcribed_text, max_length=max_summary_length, min_length=30, do_sample=False)[0]['summary_text']
 
-        collection = self._get_mongodb_collection()
-        update_result = collection.update_one(
-            {"_id": ObjectId(meeting_id)},
-            {"$set": {"summary": summary}}
-        )
-
-        if update_result.modified_count == 1:
-            self._log_to_mongodb(f"Updated document with meeting_id {meeting_id} in MongoDB", context, "INFO")
-        else:
-            self._log_to_mongodb(f"Document with meeting_id {meeting_id} not updated in MongoDB", context, "WARNING")
+        # Save the summary to the BSON document
+        self._save_summary_to_bson(context, meeting_id, summary)
 
         return {"meeting_id": str(meeting_id)}
