@@ -2,9 +2,8 @@ from collections import Counter
 from bson import ObjectId
 from operators.base_custom_operator import BaseCustomOperator
 from airflow.utils.decorators import apply_defaults
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 import spacy
-from sklearn.feature_extraction.text import CountVectorizer
 import numpy as np
 
 class NaturalLanguageProccessingOperator(BaseCustomOperator):
@@ -133,14 +132,7 @@ class NaturalLanguageProccessingOperator(BaseCustomOperator):
         meeting_id = context['dag_run'].conf.get('meeting_id')
         self._log_to_mongodb(f"Received meeting_id: {meeting_id}", context, "INFO")
 
-        meeting_info = self._get_meeting_info(context, meeting_id)
-
-        # Extract transcribed_text from meeting information
-        transcribed_text = meeting_info.get('transcribed_text')
-        if not transcribed_text:
-            error_message = f"No 'transcribed_text' found in the meeting information."
-            self._log_to_mongodb(error_message, context, "ERROR")
-            raise Exception(error_message)
+        transcribed_text = self._get_transcribed_text_from_context(context, meeting_id)
 
         nlp = spacy.load("en_core_web_sm")
         
