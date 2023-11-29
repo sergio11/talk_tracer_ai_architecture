@@ -124,6 +124,30 @@ class BaseCustomOperator(BaseOperator):
 
         self._log_to_mongodb(f"Retrieved meeting from MongoDB: {meeting_id}", context, "INFO")
         return meeting_info
+    
+
+    def _get_transcribed_text_from_context(self, context, meeting_id):
+        """
+        Retrieves the meeting_id from the context, gets meeting information,
+        and extracts the transcribed_text.
+
+        Args:
+        - context: The execution context.
+        - meeting_id: The meeting id
+
+        Returns:
+        The transcribed_text from the meeting information.
+        """
+
+        meeting_info = self._get_meeting_info(context, meeting_id)
+
+        transcribed_text = meeting_info.get('transcribed_text')
+        if not transcribed_text:
+            error_message = f"No 'transcribed_text' found in the meeting information."
+            self._log_to_mongodb(error_message, context, "ERROR")
+            raise Exception(error_message)
+
+        return transcribed_text
         
 
     def _store_file_in_minio(self, local_file_path, minio_object_name, context, content_type=None):
