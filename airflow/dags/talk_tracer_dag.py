@@ -18,10 +18,10 @@ with DAG('talk_tracer_dag', default_args=default_args, default_view="graph", sch
     VideoTranscriptionOperator = operators_module.VideoTranscriptionOperator
     operators_module = importlib.import_module('operators.natural_language_proccessing_operator')
     NaturalLanguageProccessingOperator = operators_module.NaturalLanguageProccessingOperator
-    operators_module = importlib.import_module('operators.transcription_translation_operator')
-    TranscriptionTranslationOperator = operators_module.TranscriptionTranslationOperator
     operators_module = importlib.import_module('operators.generate_summary_operator')
     GenerateSummaryOperator = operators_module.GenerateSummaryOperator
+    operators_module = importlib.import_module('operators.transcription_translation_operator')
+    TranscriptionTranslationOperator = operators_module.TranscriptionTranslationOperator
 
     # Define the task instances for each operator
 
@@ -37,20 +37,9 @@ with DAG('talk_tracer_dag', default_args=default_args, default_view="graph", sch
         minio_bucket_name=os.environ.get("MINIO_BUCKET_NAME")
     )
 
+    # Task to proccess the text using NLP techniques
     nlp_task = NaturalLanguageProccessingOperator(
         task_id='nlp_task',
-        mongo_uri=os.environ.get("MONGO_URI"),
-        mongo_db=os.environ.get("MONGO_DB"),
-        mongo_db_collection=os.environ.get("MONGO_DB_COLLECTION"),
-        minio_endpoint=os.environ.get("MINIO_ENDPOINT"),
-        minio_access_key=os.environ.get("MINIO_ACCESS_KEY"),
-        minio_secret_key=os.environ.get("MINIO_SECRET_KEY"),
-        minio_bucket_name=os.environ.get("MINIO_BUCKET_NAME")
-    )
-
-    # Task to translate the transcription into another language and store the translation
-    translation_task = TranscriptionTranslationOperator(
-        task_id='translation_task',
         mongo_uri=os.environ.get("MONGO_URI"),
         mongo_db=os.environ.get("MONGO_DB"),
         mongo_db_collection=os.environ.get("MONGO_DB_COLLECTION"),
@@ -72,5 +61,18 @@ with DAG('talk_tracer_dag', default_args=default_args, default_view="graph", sch
         minio_bucket_name=os.environ.get("MINIO_BUCKET_NAME")
     )
 
+    # Task to translate the transcription into another language and store the translation
+    translation_task = TranscriptionTranslationOperator(
+        task_id='translation_task',
+        mongo_uri=os.environ.get("MONGO_URI"),
+        mongo_db=os.environ.get("MONGO_DB"),
+        mongo_db_collection=os.environ.get("MONGO_DB_COLLECTION"),
+        minio_endpoint=os.environ.get("MINIO_ENDPOINT"),
+        minio_access_key=os.environ.get("MINIO_ACCESS_KEY"),
+        minio_secret_key=os.environ.get("MINIO_SECRET_KEY"),
+        minio_bucket_name=os.environ.get("MINIO_BUCKET_NAME"),
+        target_languages=os.environ.get("TARGET_LANGUAGE")
+    )
+
     # Define task dependencies by chaining the tasks in sequence
-    video_transcription_task >> nlp_task >> translation_task >> summary_task
+    video_transcription_task >> nlp_task >> summary_task  >> translation_task 
