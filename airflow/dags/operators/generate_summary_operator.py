@@ -49,14 +49,7 @@ class GenerateSummaryOperator(BaseCustomOperator):
         meeting_id = dag_run_conf['meeting_id']
         self._log_to_mongodb(f"Received meeting_id: {meeting_id}", context, "INFO")
 
-        meeting_info = self._get_meeting_info(context, meeting_id)
-
-        # Extract transcribed_text from meeting information
-        transcribed_text = meeting_info.get('transcribed_text')
-        if not transcribed_text:
-            error_message = f"No 'transcribed_text' found in the meeting information."
-            self._log_to_mongodb(error_message, context, "ERROR")
-            raise Exception(error_message)
+        transcribed_text = self._get_transcribed_text_from_context(context, meeting_id)
 
         summarizer = pipeline("summarization", model="Falconsai/text_summarization")
 
