@@ -9,6 +9,7 @@ from pymongo import MongoClient
 import os
 import requests
 from minio_helpers import store_file_in_minio
+import locale
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -78,13 +79,14 @@ def _handle_minio_storage(title, video_file, temp_file_path):
     return minio_object_name
 
 # Function to save metadata about the video in MongoDB
-def _save_metadata(title, description, minio_object_name):
+def _save_metadata(title, description, language, minio_object_name):
     # Generate a timestamp for the video upload
     timestamp = datetime.now()
     # Create metadata to be stored in MongoDB
     metadata = {
         "title": title,
         "description": description,
+        "language": language,
         "video_id": minio_object_name,
         "timestamp": timestamp,
         "planned": False  # Initial status, not yet planned
@@ -100,6 +102,33 @@ def _cleanup_temp_file(temp_file_path):
     # Delete the temporary file
     os.unlink(temp_file_path)
     logger.info("Temporary file deleted")
+
+
+# Function to validate the language format
+def _validate_language_format(language):
+    """
+    Validates the format of the language parameter.
+
+    Args:
+    - language (str): The language parameter to be validated.
+
+    Returns:
+    - is_valid (bool): Indicates if the language format is valid.
+    - error_message (str or None): Error message if the format is invalid, else None.
+    """
+    language_parts = language.split('-')
+    if len(language_parts) != 2:
+        return False, "Invalid language format. Should be in the format 'en-US'"
+
+    language_code, country_code = language_parts
+
+    try:
+        # Try to set the locale configuration to validate language and country code
+        locale.setlocale(locale.LC_ALL, (language_code, country_code))
+    except locale.Error:
+        return False, "Invalid language or country code"
+
+    return True, None
 
 # Function to trigger an Airflow DAG execution
 def _trigger_airflow_dag(dag_run_conf):
@@ -126,7 +155,7 @@ def _trigger_airflow_dag(dag_run_conf):
 
 # Endpoint to receive the video file, title, and description
 @app.route('/upload_video', methods=['POST'])
-def upload_video():
+def create_meeting():
     try:
         # Check if the file part is in the request
         if 'file' not in request.files:
@@ -136,10 +165,21 @@ def upload_video():
         video_file = request.files['file']
         title = request.form.get('title')
         description = request.form.get('description')
+        language = request.form.get('language')
 
         if video_file.filename == '':
             logger.error("No file selected")
             return _create_response("Error", 400, "No selected file")
+        
+        if not all([title, description, language]):
+            logger.error("Missing parameters")
+            return _create_response("Error", 400, "Missing parameters: title, description, or language")
+
+        # Validate the language format
+        is_valid_language, error_message = _validate_language_format(language)
+        if not is_valid_language:
+            logger.error(error_message)
+            return _create_response("Error", 400, error_message)
 
         logger.info(f"Received file: {video_file.filename}")
         logger.info(f"Title: {title}, Description: {description}")
@@ -151,7 +191,7 @@ def upload_video():
         minio_object_name = _handle_minio_storage(title, video_file, temp_file_path)
 
         # Save metadata about the video in MongoDB
-        meeting_id = _save_metadata(title, description, minio_object_name)
+        meeting_id = _save_metadata(title, description, language, minio_object_name)
 
         # Clean up the temporary file
         _cleanup_temp_file(temp_file_path)
