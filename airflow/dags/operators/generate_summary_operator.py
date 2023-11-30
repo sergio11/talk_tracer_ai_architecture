@@ -32,7 +32,9 @@ class GenerateSummaryOperator(BaseCustomOperator):
         if update_result.modified_count == 1:
             self._log_to_mongodb(f"Updated document with meeting_id {meeting_id} in MongoDB", context, "INFO")
         else:
-            self._log_to_mongodb(f"Document with meeting_id {meeting_id} not updated in MongoDB", context, "WARNING")
+            error_message = f"Document with meeting_id {meeting_id} not updated in MongoDB"
+            self._log_to_mongodb(error_message, context, "WARNING")
+            raise Exception(error_message)
 
     def execute(self, context):
         """
@@ -49,7 +51,7 @@ class GenerateSummaryOperator(BaseCustomOperator):
         meeting_id = dag_run_conf['meeting_id']
         self._log_to_mongodb(f"Received meeting_id: {meeting_id}", context, "INFO")
 
-        transcribed_text = self._get_transcribed_text_from_context(context, meeting_id)
+        transcribed_text = self._get_transcribed_text_from_meeting_info(context, meeting_id)
 
         summarizer = pipeline("summarization", model="Falconsai/text_summarization")
 
