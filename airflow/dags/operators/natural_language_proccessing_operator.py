@@ -5,6 +5,7 @@ from airflow.utils.decorators import apply_defaults
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 import spacy
 import numpy as np
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 class NaturalLanguageProccessingOperator(BaseCustomOperator):
     """
@@ -14,6 +15,43 @@ class NaturalLanguageProccessingOperator(BaseCustomOperator):
     @apply_defaults
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+    def _analyze_sentiment(self, text):
+        """
+        Analyzes sentiment using VADER SentimentIntensityAnalyzer.
+
+        Args:
+        - text: The text to analyze sentiment for.
+
+        Returns:
+        A dictionary containing sentiment scores.
+        """
+        analyzer = SentimentIntensityAnalyzer()
+        sentiment_scores = analyzer.polarity_scores(text)
+        return sentiment_scores
+
+    def _extract_sentiment_phrases(self, nlp, text, num_phrases):
+        """
+        Extracts the most positive and most negative phrases from the text.
+
+        Args:
+        - nlp: The spaCy natural language processing pipeline.
+        - text: The input text to extract sentiment phrases from.
+        - num_phrases: The number of positive/negative phrases to extract.
+
+        Returns:
+        A tuple containing lists of the most positive and most negative phrases.
+        """
+        doc = nlp(text)
+        sentences = [sent.text for sent in doc.sents]
+
+        sentiment_scores = [self._analyze_sentiment(sentence)['compound'] for sentence in sentences]
+        sorted_indices = np.argsort(sentiment_scores)
+
+        most_positive_phrases = [sentences[i] for i in sorted_indices[-num_phrases:]]
+        most_negative_phrases = [sentences[i] for i in sorted_indices[:num_phrases]]
+
+        return most_positive_phrases, most_negative_phrases
 
     def _extract_most_frequent_expressions(self, nlp, text):
         """
@@ -99,9 +137,10 @@ class NaturalLanguageProccessingOperator(BaseCustomOperator):
         return entities
 
 
-    def _update_nlp_results_in_mongodb(self, context, meeting_id, key_phrases, named_entities, frequent_expressions):
+    def _update_nlp_results_in_mongodb(self, context, meeting_id, key_phrases, named_entities, frequent_expressions, most_positive, most_negative):
         """
-        Updates the MongoDB document with extracted Named Entities, Key Phrases, and Frequent Expressions.
+        Updates the MongoDB document with extracted Named Entities, Key Phrases, Frequent Expressions,
+        Most Positive Phrases, and Most Negative Phrases.
 
         Args:
         - context: The execution context.
@@ -109,6 +148,8 @@ class NaturalLanguageProccessingOperator(BaseCustomOperator):
         - key_phrases: List of key phrases to be updated in the MongoDB document.
         - named_entities: List of named entities to be updated in the MongoDB document.
         - frequent_expressions: List of frequent expressions to be updated in the MongoDB document.
+        - most_positive: List of most positive phrases to be updated in the MongoDB document.
+        - most_negative: List of most negative phrases to be updated in the MongoDB document.
         """
         collection = self._get_mongodb_collection()
         update_result = collection.update_one(
@@ -116,7 +157,9 @@ class NaturalLanguageProccessingOperator(BaseCustomOperator):
             {"$set": {
                 "key_phrases": key_phrases,
                 "named_entities": named_entities,
-                "frequent_expressions": frequent_expressions
+                "frequent_expressions": frequent_expressions,
+                "most_positive_phrases": most_positive,
+                "most_negative_phrases": most_negative
             }}
         )
 
@@ -150,9 +193,11 @@ class NaturalLanguageProccessingOperator(BaseCustomOperator):
         self._log_to_mongodb("Extracting most frequent expressions...", context, "INFO")
         frequent_expressions = self._extract_most_frequent_expressions(nlp, transcribed_text)
 
+        most_positive, most_negative = self._extract_sentiment_phrases(nlp, transcribed_text, num_phrases=3)
+
         # Update Named Entities and Key Phrases in MongoDB document
         self._log_to_mongodb("Updating NLP results in MongoDB document...", context, "INFO")
-        self._update_nlp_results_in_mongodb(context, meeting_id, key_phrases, named_entities, frequent_expressions)
+        self._update_nlp_results_in_mongodb(context, meeting_id, key_phrases, named_entities, frequent_expressions, most_positive, most_negative)
 
         self._log_to_mongodb("Execution of NaturalLanguageProccessingOperator completed.", context, "INFO")
 
