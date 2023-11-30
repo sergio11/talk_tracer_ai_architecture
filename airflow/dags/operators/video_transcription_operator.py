@@ -18,9 +18,11 @@ class VideoTranscriptionOperator(BaseCustomOperator):
     @apply_defaults
     def __init__(
         self,
+        segment_duration,
         *args, **kwargs
     ):
         super().__init__(*args, **kwargs)
+        self.segment_duration = segment_duration
 
 
     def _initialize_recognizer(self):
@@ -88,9 +90,11 @@ class VideoTranscriptionOperator(BaseCustomOperator):
         if update_result.modified_count == 1:
             self._log_to_mongodb(f"Updated document with meeting_id {meeting_id} in MongoDB", context, "INFO")
         else:
-            self._log_to_mongodb(f"Document with meeting_id {meeting_id} not updated in MongoDB", context, "WARNING")
+            error_message = f"Document with meeting_id {meeting_id} not updated in MongoDB"
+            self._log_to_mongodb(error_message, context, "WARNING")
+            raise Exception(error_message)
 
-    def _transcribe_segment(self, context, recognizer, audio_segment):
+    def _transcribe_segment(self, context, recognizer, audio_segment, language):
         """
         Transcribes an audio segment using the provided recognizer.
 
@@ -103,36 +107,36 @@ class VideoTranscriptionOperator(BaseCustomOperator):
         str: Transcribed text.
         """
         try:
-            text = recognizer.recognize_google(audio_segment, language='en-US')
+            text = recognizer.recognize_google(audio_segment, language=language)
             return text
         except sr.UnknownValueError as e:
             self._log_to_mongodb(f"This segment could not be trascripted #{e}", context, "ERROR")
         except sr.RequestError as e:
             self._log_to_mongodb(f"An error ocurred when trying to transcript the segment #{e}", context, "ERROR")
 
-    def _transcribe_audio(self, context, audio_file_path):
+    def _transcribe_audio(self, context, audio_file_path, language):
         """
         Transcribes the entire audio file.
 
         Args:
         context (dict): The execution context.
         audio_file_path (str): Path to the audio file.
+        language (str): Language of the audio file for transcription.
 
         Returns:
         str: Combined transcribed text from all segments.
         """
         recognizer = self._initialize_recognizer()
-        segment_duration = 120
         audio_duration = self._get_audio_duration(audio_file_path)
-        num_segments = int(audio_duration / segment_duration) + 1
+        num_segments = int(audio_duration / self.segment_duration) + 1
         transcribed_texts = []
         with sr.AudioFile(audio_file_path) as source:
             for i in range(num_segments):
-                start_time = i * segment_duration
-                end_time = min((i + 1) * segment_duration, audio_duration)
+                start_time = i * self.segment_duration
+                end_time = min((i + 1) * self.segment_duration, audio_duration)
                 audio_segment = recognizer.record(source, offset=start_time, duration=end_time - start_time)
                 self._log_to_mongodb(f"Transcribing segment {i + 1} of {num_segments}...", context, "INFO")
-                text = self._transcribe_segment(context, recognizer, audio_segment)
+                text = self._transcribe_segment(context, recognizer, audio_segment, language)
                 if text:
                     transcribed_texts.append(text)
 
@@ -199,30 +203,28 @@ class VideoTranscriptionOperator(BaseCustomOperator):
         self._log_to_mongodb(f"Received meeting_id: {meeting_id}", context, "INFO")
 
         meeting_info = self._get_meeting_info(context, meeting_id)
-
         self._log_to_mongodb(f"Retrieved meeting from MongoDB: {meeting_id}", context, "INFO")
 
         # Extract video_id from meeting information
-        video_id = meeting_info.get('video_id')
-        if not video_id:
-            error_message = f"No 'video_id' found in the meeting information."
-            self._log_to_mongodb(error_message, context, "ERROR")
-            raise Exception(error_message)
-
+        video_id = self._get_video_id_from_meeting_info(context, meeting_info)
         self._log_to_mongodb(f"Received video_id: {video_id}", context, "INFO")
+
+        # Extract language from meeting information        
+        language = self._get_language_from_meeting_info(context, meeting_info)
+        self._log_to_mongodb(f"Received language: {language}", context, "INFO")
 
         # Get MinIO client
         minio_client = self._get_minio_client(context)
 
         try:
-            file_path = f"{video_id}.mp4"
+            file_path = f"{video_id}.wav"
             self._log_to_mongodb(f"Attempting to download file '{file_path}' from MinIO...", context, "INFO")
             
             # Download the audio file from MinIO and get the file path
             audio_file_path = self._download_file_from_minio(context, minio_client, file_path)
 
             # Transcribe the audio file and combine transcribed texts
-            combined_text = self._transcribe_audio(context, audio_file_path)
+            combined_text = self._transcribe_audio(context, audio_file_path, language)
 
             # Correct punctuation in the combined text using spaCy
             corrected_text = self._correct_punctuation_with_spacy(combined_text)
