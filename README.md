@@ -1,6 +1,12 @@
 # TalkTracerAI - 🌟 Empowering Productivity Through Meeting Insight. 📈💡
 
+<img width="300px" align="left" src="./doc/logo.PNG" />
+
 Welcome to TalkTracerAI, an innovative solution aimed at enhancing productivity by providing comprehensive insights from meeting conversations. With TalkTracerAI, gain a deeper understanding of your discussions, extract meaningful information, and unlock valuable data-driven insights from meetings. 🚀🔍
+
+At TalkTracerAI, we take your meeting words and turn them into powerful insights. We help you see what's really going on behind the scenes. It's like having a magic decoder for meetings that shows you the important bits. From knowing how people feel to finding the 'aha!' moments, TalkTracerAI helps you get the most out of every meeting.
+
+With TalkTracerAI, your meetings turn into smart resources that drive better decisions and fuel growth!
 
 <p align="center">
   <img src="https://img.shields.io/badge/flask-%23000.svg?style=for-the-badge&logo=flask&logoColor=white" />
