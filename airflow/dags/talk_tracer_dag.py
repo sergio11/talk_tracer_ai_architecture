@@ -71,7 +71,7 @@ with DAG('talk_tracer_dag', default_args=default_args, default_view="graph", sch
         minio_access_key=os.environ.get("MINIO_ACCESS_KEY"),
         minio_secret_key=os.environ.get("MINIO_SECRET_KEY"),
         minio_bucket_name=os.environ.get("MINIO_BUCKET_NAME"),
-        target_languages=os.environ.get("TARGET_LANGUAGE")
+        target_languages=os.environ.get("TARGET_LANGUAGES").split(",")
     )
 
     # Define task dependencies by chaining the tasks in sequence
