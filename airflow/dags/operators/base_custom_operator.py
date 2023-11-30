@@ -126,7 +126,7 @@ class BaseCustomOperator(BaseOperator):
         return meeting_info
     
 
-    def _get_transcribed_text_from_context(self, context, meeting_id):
+    def _get_transcribed_text_from_meeting_info(self, context, meeting_info):
         """
         Retrieves the meeting_id from the context, gets meeting information,
         and extracts the transcribed_text.
@@ -138,9 +138,6 @@ class BaseCustomOperator(BaseOperator):
         Returns:
         The transcribed_text from the meeting information.
         """
-
-        meeting_info = self._get_meeting_info(context, meeting_id)
-
         transcribed_text = meeting_info.get('transcribed_text')
         if not transcribed_text:
             error_message = f"No 'transcribed_text' found in the meeting information."
@@ -148,6 +145,64 @@ class BaseCustomOperator(BaseOperator):
             raise Exception(error_message)
 
         return transcribed_text
+    
+
+    def _get_language_from_meeting_info(self, context, meeting_info):
+        """
+        Retrieves the meeting information and extracts the language.
+
+        Args:
+        - context: The execution context.
+        - meeting_info: The meeting information
+
+        Returns:
+        The language from the meeting information.
+        """
+        language = meeting_info.get('language')
+        if not language:
+            error_message = f"No 'language' found in the meeting information."
+            self._log_to_mongodb(error_message, context, "ERROR")
+            raise Exception(error_message)
+
+        return language
+    
+    def _get_video_id_from_meeting_info(self, context, meeting_info):
+        """
+        Retrieves the meeting information and extracts the video_id.
+
+        Args:
+        - context: The execution context.
+        - meeting_info: The meeting information
+
+        Returns:
+        The video_id from the meeting information.
+        """
+        video_id = meeting_info.get('video_id')
+        if not video_id:
+            error_message = f"No 'video_id' found in the meeting information."
+            self._log_to_mongodb(error_message, context, "ERROR")
+            raise Exception(error_message)
+
+        return video_id
+    
+    def _get_summary_from_meeting_info(self, context, meeting_info):
+        """
+        Retrieves the meeting information and extracts the summary.
+
+        Args:
+        - context: The execution context.
+        - meeting_info: The meeting information
+
+        Returns:
+        The summary from the meeting information.
+        """
+        summary = meeting_info.get('summary')
+        if not summary:
+            error_message = f"No 'summary' found in the meeting information."
+            self._log_to_mongodb(error_message, context, "ERROR")
+            raise Exception(error_message)
+
+        return summary
         
 
     def _store_file_in_minio(self, local_file_path, minio_object_name, context, content_type=None):
