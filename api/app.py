@@ -15,6 +15,11 @@ import locale
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Base prefix for application routes
+BASE_URL_PREFIX = "/meetings"
+
+ALLOWED_EXTENSIONS = {'wav'}
+
 # Get MongoDB connection details from environment variables
 MONGO_URI = os.environ.get("MONGO_URI")
 MONGO_DB = os.environ.get("MONGO_DB")
@@ -51,6 +56,11 @@ def _create_response(status, code, message, data=None):
     }
     return jsonify(response_data), code
 
+# Check if the filename has a valid extension present in the ALLOWED_EXTENSIONS set
+def _allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 # Function to save the uploaded file locally
 def _save_file_locally(video_file):
     # Create a temporary file to store the uploaded video
@@ -61,11 +71,13 @@ def _save_file_locally(video_file):
     logger.info(f"File saved locally: {temp_file_path}")
     return temp_file_path
 
-# Function to handle MinIO storage for the video file
-def _handle_minio_storage(title, video_file, temp_file_path):
-    # Generate a unique name for the file in MinIO
-    minio_object_name = f"{title}_{video_file.filename}"
-    logger.info(f"Storing file in MinIO with name: {minio_object_name}")
+# Function to handle MinIO storage for the file
+def _handle_minio_storage(file, temp_file_path):
+    # Get the file extension from the uploaded file
+    file_extension = os.path.splitext(file.filename)[1]
+    # Generate a unique name for the file in MinIO using UUID and the file extension
+    unique_filename = f"{str(uuid.uuid4())}{file_extension}"
+    logger.info(f"Storing file in MinIO with name: {unique_filename}")
     # Store the video file in MinIO
     store_file_in_minio(
         minio_endpoint=MINIO_ENDPOINT,
@@ -73,10 +85,10 @@ def _handle_minio_storage(title, video_file, temp_file_path):
         minio_secret_key=MINIO_SECRET_KEY,
         minio_bucket_name=MINIO_BUCKET_NAME,
         local_file_path=temp_file_path,
-        minio_object_name=minio_object_name
+        minio_object_name=unique_filename
     )
     logger.info("File stored in MinIO successfully")
-    return minio_object_name
+    return unique_filename
 
 # Function to save metadata about the video in MongoDB
 def _save_metadata(title, description, language, minio_object_name):
@@ -87,7 +99,7 @@ def _save_metadata(title, description, language, minio_object_name):
         "title": title,
         "description": description,
         "language": language,
-        "video_id": minio_object_name,
+        "file_id": minio_object_name,
         "timestamp": timestamp,
         "planned": False  # Initial status, not yet planned
     }
@@ -153,23 +165,27 @@ def _trigger_airflow_dag(dag_run_conf):
     )
     return response
 
-# Endpoint to receive the video file, title, and description
-@app.route('/upload_video', methods=['POST'])
+# Endpoint to receive the audio file, title, and description
+@app.route(f"{BASE_URL_PREFIX}/create", methods=['POST'])
 def create_meeting():
     try:
-        # Check if the file part is in the request
-        if 'file' not in request.files:
-            logger.error("No file part received")
-            return _create_response("Error", 400, "No file part")
+        # Check if the audio_file part is in the request
+        if 'audio_file' not in request.files:
+            logger.error("No audio file part received")
+            return _create_response("Error", 400, "No audio file part")
 
-        video_file = request.files['file']
+        audio_file = request.files['audio_file']
         title = request.form.get('title')
         description = request.form.get('description')
         language = request.form.get('language')
 
-        if video_file.filename == '':
-            logger.error("No file selected")
-            return _create_response("Error", 400, "No selected file")
+        if audio_file.filename == '':
+            logger.error("No audio file selected")
+            return _create_response("Error", 400, "No audio file file")
+        
+        if not _allowed_file(audio_file.filename):
+            logger.error("Invalid audio file format. Only WAV files are allowed.")
+            return _create_response("Error", 400, "Invalid audio file format. Only WAV files are allowed.")
         
         if not all([title, description, language]):
             logger.error("Missing parameters")
@@ -181,14 +197,14 @@ def create_meeting():
             logger.error(error_message)
             return _create_response("Error", 400, error_message)
 
-        logger.info(f"Received file: {video_file.filename}")
+        logger.info(f"Received file: {audio_file.filename}")
         logger.info(f"Title: {title}, Description: {description}")
 
-        # Save the video file locally
-        temp_file_path = _save_file_locally(video_file)
+        # Save the file locally
+        temp_file_path = _save_file_locally(audio_file)
 
-        # Store the video file in MinIO
-        minio_object_name = _handle_minio_storage(title, video_file, temp_file_path)
+        # Store the file in MinIO
+        minio_object_name = _handle_minio_storage(audio_file, temp_file_path)
 
         # Save metadata about the video in MongoDB
         meeting_id = _save_metadata(title, description, language, minio_object_name)

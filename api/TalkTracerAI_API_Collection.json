@@ -1,0 +1,56 @@
+{
+    "info": {
+      "_postman_id": "c13e85c4-xxxx-xxxx-xxxx-5e4c18712675",
+      "name": "TalkTracerAI API",
+      "description": "TalkTracerAI is an NLP-based meeting analysis tool that transcribes, analyzes, and summarizes conversations, delivering valuable insights and enhancing productivity.",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Create Meeting",
+        "request": {
+          "method": "POST",
+          "header": [],
+          "body": {
+            "mode": "formdata",
+            "formdata": [
+              {
+                "key": "audio_file",
+                "type": "file",
+                "src": "/path/to/your/audio_file.mp3"
+              },
+              {
+                "key": "title",
+                "value": "Meeting Title",
+                "type": "text"
+              },
+              {
+                "key": "description",
+                "value": "Meeting Description",
+                "type": "text"
+              },
+              {
+                "key": "language",
+                "value": "English",
+                "type": "text"
+              }
+            ]
+          },
+          "url": {
+            "raw": "http://localhost:5000/api/create",
+            "protocol": "http",
+            "host": [
+              "localhost"
+            ],
+            "port": "5000",
+            "path": [
+              "api",
+              "create"
+            ]
+          }
+        },
+        "response": []
+      }
+    ]
+  }
+  
