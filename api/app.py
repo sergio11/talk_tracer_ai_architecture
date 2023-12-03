@@ -1,5 +1,5 @@
 import base64
-import datetime
+from datetime import datetime, timedelta
 import logging
 import tempfile
 import uuid
@@ -9,14 +9,13 @@ from pymongo import MongoClient
 import os
 import requests
 from minio_helpers import store_file_in_minio
-import locale
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Base prefix for application routes
-BASE_URL_PREFIX = "/meetings"
+BASE_URL_PREFIX = "/api/meetings"
 
 ALLOWED_EXTENSIONS = {'wav'}
 
@@ -29,15 +28,16 @@ MONGO_COLLECTION = os.environ.get("MONGO_DB_COLLECTION")
 AIRFLOW_DAG_ID = os.environ.get("AIRFLOW_DAG_ID")
 AIRFLOW_API_URL = os.environ.get("AIRFLOW_API_URL")
 
-# MinIO configuration
-MINIO_ENDPOINT = os.environ.get("MINIO_ENDPOINT"),
-MINIO_ACCESS_KEY = os.environ.get("MINIO_ACCESS_KEY"),
-MINIO_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY"),
-MINIO_BUCKET_NAME = os.environ.get("MINIO_BUCKET_NAME")
-
 # Get API Executor username and password from environment variables
 API_EXECUTOR_USERNAME = os.environ.get("API_EXECUTOR_USERNAME")
 API_EXECUTOR_PASSWORD = os.environ.get("API_EXECUTOR_PASSWORD")
+
+# MinIO configuration
+MINIO_ENDPOINT = os.environ.get("MINIO_ENDPOINT")
+MINIO_ACCESS_KEY = os.environ.get("MINIO_ACCESS_KEY")
+MINIO_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY")
+MINIO_BUCKET_NAME = os.environ.get("MINIO_BUCKET_NAME")
+
 
 # Connect to MongoDB using the provided URI
 mongo_client = MongoClient(MONGO_URI)
@@ -77,7 +77,7 @@ def _handle_minio_storage(file, temp_file_path):
     file_extension = os.path.splitext(file.filename)[1]
     # Generate a unique name for the file in MinIO using UUID and the file extension
     unique_filename = f"{str(uuid.uuid4())}{file_extension}"
-    logger.info(f"Storing file in MinIO with name: {unique_filename}")
+    logger.info(f"Storing file in MinIO {MINIO_ENDPOINT} with name: {unique_filename}")
     # Store the video file in MinIO
     store_file_in_minio(
         minio_endpoint=MINIO_ENDPOINT,
@@ -93,7 +93,7 @@ def _handle_minio_storage(file, temp_file_path):
 # Function to save metadata about the video in MongoDB
 def _save_metadata(title, description, language, minio_object_name):
     # Generate a timestamp for the video upload
-    timestamp = datetime.now()
+    timestamp = datetime.utcnow()
     # Create metadata to be stored in MongoDB
     metadata = {
         "title": title,
@@ -115,7 +115,6 @@ def _cleanup_temp_file(temp_file_path):
     os.unlink(temp_file_path)
     logger.info("Temporary file deleted")
 
-
 # Function to validate the language format
 def _validate_language_format(language):
     """
@@ -131,14 +130,6 @@ def _validate_language_format(language):
     language_parts = language.split('-')
     if len(language_parts) != 2:
         return False, "Invalid language format. Should be in the format 'en-US'"
-
-    language_code, country_code = language_parts
-
-    try:
-        # Try to set the locale configuration to validate language and country code
-        locale.setlocale(locale.LC_ALL, (language_code, country_code))
-    except locale.Error:
-        return False, "Invalid language or country code"
 
     return True, None
 
@@ -159,7 +150,7 @@ def _trigger_airflow_dag(dag_run_conf):
 
     # Trigger the Airflow DAG execution by sending a POST request
     response = requests.post(
-        airflow_dag_url,
+        url=airflow_dag_url,
         json=dag_run_conf,
         headers=headers
     )
@@ -168,54 +159,59 @@ def _trigger_airflow_dag(dag_run_conf):
 # Endpoint to receive the audio file, title, and description
 @app.route(f"{BASE_URL_PREFIX}/create", methods=['POST'])
 def create_meeting():
+    # Check if the audio_file part is in the request
+    if 'audio_file' not in request.files:
+        logger.error("No audio file part received")
+        return _create_response("Error", 400, "No audio file part")
+
+    audio_file = request.files['audio_file']
+    title = request.form.get('title')
+    description = request.form.get('description')
+    language = request.form.get('language')
+
+    if audio_file.filename == '':
+        logger.error("No audio file selected")
+        return _create_response("Error", 400, "No audio file file")
+        
+    if not _allowed_file(audio_file.filename):
+        logger.error("Invalid audio file format. Only WAV files are allowed.")
+        return _create_response("Error", 400, "Invalid audio file format. Only WAV files are allowed.")
+        
+    if not all([title, description, language]):
+        logger.error("Missing parameters")
+        return _create_response("Error", 400, "Missing parameters: title, description, or language")
+
+    # Validate the language format
+    is_valid_language, error_message = _validate_language_format(language)
+    if not is_valid_language:
+        logger.error(error_message)
+        return _create_response("Error", 400, error_message)
+    
+    existing_meeting = db_collection.find_one({"title": title})
+    if existing_meeting:
+        logger.error("Meeting with the same title already exists")
+        return _create_response("Error", 400, "Meeting with the same title already exists")
+
+    logger.info(f"Received file: {audio_file.filename}")
+    logger.info(f"Title: {title}, Description: {description}")
+
+    # Save the file locally
+    temp_file_path = _save_file_locally(audio_file)
+
+    # Store the file in MinIO
+    minio_object_name = _handle_minio_storage(audio_file, temp_file_path)
+
+    # Save metadata about the audio in MongoDB
+    meeting_id = _save_metadata(title, description, language, minio_object_name)
+
+    # Clean up the temporary file
+    _cleanup_temp_file(temp_file_path)
+
     try:
-        # Check if the audio_file part is in the request
-        if 'audio_file' not in request.files:
-            logger.error("No audio file part received")
-            return _create_response("Error", 400, "No audio file part")
-
-        audio_file = request.files['audio_file']
-        title = request.form.get('title')
-        description = request.form.get('description')
-        language = request.form.get('language')
-
-        if audio_file.filename == '':
-            logger.error("No audio file selected")
-            return _create_response("Error", 400, "No audio file file")
-        
-        if not _allowed_file(audio_file.filename):
-            logger.error("Invalid audio file format. Only WAV files are allowed.")
-            return _create_response("Error", 400, "Invalid audio file format. Only WAV files are allowed.")
-        
-        if not all([title, description, language]):
-            logger.error("Missing parameters")
-            return _create_response("Error", 400, "Missing parameters: title, description, or language")
-
-        # Validate the language format
-        is_valid_language, error_message = _validate_language_format(language)
-        if not is_valid_language:
-            logger.error(error_message)
-            return _create_response("Error", 400, error_message)
-
-        logger.info(f"Received file: {audio_file.filename}")
-        logger.info(f"Title: {title}, Description: {description}")
-
-        # Save the file locally
-        temp_file_path = _save_file_locally(audio_file)
-
-        # Store the file in MinIO
-        minio_object_name = _handle_minio_storage(audio_file, temp_file_path)
-
-        # Save metadata about the video in MongoDB
-        meeting_id = _save_metadata(title, description, language, minio_object_name)
-
-        # Clean up the temporary file
-        _cleanup_temp_file(temp_file_path)
-
         # Generate a unique DAG run ID
         dag_run_id = str(uuid.uuid4())
         # Calculate the logical date 2 minutes from now
-        logical_date = datetime.utcnow() + datetime.timedelta(minutes=2)
+        logical_date = datetime.utcnow() + timedelta(minutes=2)
         logical_date_str = logical_date.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
         dag_run_conf = {
@@ -237,7 +233,15 @@ def create_meeting():
                 {"$set": {"planned": True, "planned_date": logical_date_str}}
             )
             logger.info("DAG execution triggered successfully")
-            response_data = _create_response("Success", 200, "Meeting generated and scheduled successfully.")
+            # Get meeting details
+            meeting_info = db_collection.find_one({"_id": ObjectId(meeting_id)})
+            response_data = _create_response("Success", 200, "Meeting generated and scheduled successfully.", data= {
+                "meeting_id": str(meeting_info["_id"]),
+                "title": meeting_info["title"],
+                "description": meeting_info["description"],
+                "language": meeting_info["language"],
+                "planned_date": meeting_info["planned_date"]
+            })
             return response_data
         else:
             # If DAG execution fails, remove the document from MongoDB
@@ -245,10 +249,11 @@ def create_meeting():
             logger.error(f"Error triggering DAG execution: {response.text}")
             logger.error(f"HTTP Request Body: {dag_run_conf}")
             response_data = _create_response("Error", response.status_code, "Error triggering DAG execution.")
-            return response_data
+            return response_data   
     except Exception as e:
-        logger.error(f"An error occurred while uploading file: {str(e)}")
-        return _create_response("Error", 500, "An error occurred during file upload")
+        logger.error(f"An error occurred during file proccessing : {str(e)}")
+        db_collection.delete_one({"_id": ObjectId(meeting_id)})
+        return _create_response("Error", 500, "An error occurred during file proccessing")
 
 @app.errorhandler(Exception)
 def handle_error(e):

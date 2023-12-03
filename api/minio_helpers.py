@@ -18,7 +18,7 @@ def get_minio_client(minio_endpoint, minio_access_key, minio_secret_key, minio_b
     """
     try:
         minio_client = Minio(
-            minio_endpoint,
+            endpoint=minio_endpoint,
             access_key=minio_access_key,
             secret_key=minio_secret_key,
             secure=False
@@ -58,12 +58,12 @@ def store_file_in_minio(minio_endpoint, minio_access_key, minio_secret_key, mini
             # Get MinIO client
             minio_client = get_minio_client(minio_endpoint, minio_access_key, minio_secret_key, minio_bucket_name)
             minio_client.put_object(
-                    minio_bucket_name,
-                    minio_object_name,
-                    file_data,
-                    file_size_bytes,
-                    content_type=content_type
-                )
+                bucket_name=minio_bucket_name,
+                object_name=minio_object_name,
+                data=file_data,
+                length=file_size_bytes,
+                content_type=content_type
+            )
     except Exception as e:
-        error_message = f"Error storing file '{local_file_path}' in MinIO: {e}"
+        error_message = f"Error storing file '{local_file_path}' - {minio_object_name} in MinIO: {e}"
         raise Exception(error_message)
