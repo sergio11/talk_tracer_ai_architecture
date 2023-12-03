@@ -3,7 +3,7 @@ from operators.base_custom_operator import BaseCustomOperator
 from googletrans import Translator
 from airflow.utils.decorators import apply_defaults
 
-class TranscriptionTranslationOperator(BaseCustomOperator):
+class TranslationOperator(BaseCustomOperator):
     """
     Custom Airflow Operator for translating transcribed text into multiple target languages.
 

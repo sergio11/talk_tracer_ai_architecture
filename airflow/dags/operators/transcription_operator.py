@@ -6,9 +6,9 @@ from moviepy.editor import AudioFileClip
 import speech_recognition as sr
 import spacy
 
-class VideoTranscriptionOperator(BaseCustomOperator):
+class TranscriptionOperator(BaseCustomOperator):
     """
-    An operator that performs audio transcription for video meetings.
+    An operator that performs audio transcription for meetings.
 
     This operator retrieves meeting information from MongoDB, downloads the corresponding audio file from MinIO,
     transcribes the audio content, and updates the MongoDB document with the transcribed text.
@@ -18,11 +18,11 @@ class VideoTranscriptionOperator(BaseCustomOperator):
     @apply_defaults
     def __init__(
         self,
-        segment_duration,
+        audio_segment_duration,
         *args, **kwargs
     ):
         super().__init__(*args, **kwargs)
-        self.segment_duration = segment_duration
+        self.audio_segment_duration = audio_segment_duration
 
 
     def _initialize_recognizer(self):
@@ -59,15 +59,20 @@ class VideoTranscriptionOperator(BaseCustomOperator):
         Returns:
         str: Path to the downloaded temporary file.
         """
-        with tempfile.NamedTemporaryFile(suffix='.mp4') as temp_file:
-            temp_file_path = temp_file.name
-            minio_client.fget_object(
-                bucket_name=self.minio_bucket_name,
-                object_name=file_path,
-                file_path=temp_file_path
-            )
-            self._log_to_mongodb(f"Downloaded file '{file_path}' from MinIO to temporary file", context, "INFO")
-            return temp_file_path
+        try:
+            with tempfile.NamedTemporaryFile(suffix='.mp4') as temp_file:
+                temp_file_path = temp_file.name
+                minio_client.fget_object(
+                    bucket_name=self.minio_bucket_name,
+                    object_name=file_path,
+                    file_path=temp_file_path
+                )
+                self._log_to_mongodb(f"Downloaded file '{file_path}' from MinIO to temporary file", context, "INFO")
+                return temp_file_path
+        except Exception as e:
+            error_message = f"Error downloading file '{file_path}' from MinIO: {str(e)}"
+            self._log_to_mongodb(error_message, context, "ERROR")
+            raise e
         
     def _update_transcribed_text(self, context, meeting_id, combined_text):
         """
@@ -128,12 +133,12 @@ class VideoTranscriptionOperator(BaseCustomOperator):
         """
         recognizer = self._initialize_recognizer()
         audio_duration = self._get_audio_duration(audio_file_path)
-        num_segments = int(audio_duration / self.segment_duration) + 1
+        num_segments = int(audio_duration / self.audio_segment_duration) + 1
         transcribed_texts = []
         with sr.AudioFile(audio_file_path) as source:
             for i in range(num_segments):
-                start_time = i * self.segment_duration
-                end_time = min((i + 1) * self.segment_duration, audio_duration)
+                start_time = i * self.audio_segment_duration
+                end_time = min((i + 1) * self.audio_segment_duration, audio_duration)
                 audio_segment = recognizer.record(source, offset=start_time, duration=end_time - start_time)
                 self._log_to_mongodb(f"Transcribing segment {i + 1} of {num_segments}...", context, "INFO")
                 text = self._transcribe_segment(context, recognizer, audio_segment, language)
@@ -184,7 +189,7 @@ class VideoTranscriptionOperator(BaseCustomOperator):
 
     def execute(self, context):
         """
-        Executes the VideoTranscriptionOperator.
+        Executes the TranscriptionOperator.
 
         Args:
         context (dict): The execution context.
@@ -205,9 +210,9 @@ class VideoTranscriptionOperator(BaseCustomOperator):
         meeting_info = self._get_meeting_info(context, meeting_id)
         self._log_to_mongodb(f"Retrieved meeting from MongoDB: {meeting_id}", context, "INFO")
 
-        # Extract video_id from meeting information
-        video_id = self._get_video_id_from_meeting_info(context, meeting_info)
-        self._log_to_mongodb(f"Received video_id: {video_id}", context, "INFO")
+        # Extract file_id from meeting information
+        file_id = self._get_file_id_from_meeting_info(context, meeting_info)
+        self._log_to_mongodb(f"Received file_id: {file_id}", context, "INFO")
 
         # Extract language from meeting information        
         language = self._get_language_from_meeting_info(context, meeting_info)
@@ -216,27 +221,19 @@ class VideoTranscriptionOperator(BaseCustomOperator):
         # Get MinIO client
         minio_client = self._get_minio_client(context)
 
-        try:
-            file_path = f"{video_id}.wav"
-            self._log_to_mongodb(f"Attempting to download file '{file_path}' from MinIO...", context, "INFO")
+        self._log_to_mongodb(f"Attempting to download file '{file_id}' from MinIO...", context, "INFO")
             
-            # Download the audio file from MinIO and get the file path
-            audio_file_path = self._download_file_from_minio(context, minio_client, file_path)
+        # Download the file from MinIO and get the file path
+        file_path = self._download_file_from_minio(context, minio_client, file_id)
 
-            # Transcribe the audio file and combine transcribed texts
-            combined_text = self._transcribe_audio(context, audio_file_path, language)
+        # Transcribe the file and combine transcribed texts
+        combined_text = self._transcribe_audio(context, file_path, language)
 
-            # Correct punctuation in the combined text using spaCy
-            corrected_text = self._correct_punctuation_with_spacy(combined_text)
+        # Correct punctuation in the combined text using spaCy
+        corrected_text = self._correct_punctuation_with_spacy(combined_text)
 
-            # Update the transcribed_text field in MongoDB for the meeting_id document
-            self._update_transcribed_text(context, meeting_id, corrected_text)
+        # Update the transcribed_text field in MongoDB for the meeting_id document
+        self._update_transcribed_text(context, meeting_id, corrected_text)
 
-            return {"meeting_id": str(meeting_id)}
-
-        except Exception as e:
-            # Handle exceptions and log errors
-            error_message = f"Error downloading file '{file_path}' from MinIO: {e}"
-            self._log_to_mongodb(error_message, context, "ERROR")
-            raise Exception(error_message)
+        return {"meeting_id": str(meeting_id)}
 
