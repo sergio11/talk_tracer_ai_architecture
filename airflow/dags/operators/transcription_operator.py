@@ -1,3 +1,4 @@
+import os
 import tempfile
 from bson import ObjectId
 from operators.base_custom_operator import BaseCustomOperator
@@ -22,7 +23,7 @@ class TranscriptionOperator(BaseCustomOperator):
         *args, **kwargs
     ):
         super().__init__(*args, **kwargs)
-        self.audio_segment_duration = audio_segment_duration
+        self.audio_segment_duration = int(audio_segment_duration)
 
 
     def _initialize_recognizer(self):
@@ -52,28 +53,28 @@ class TranscriptionOperator(BaseCustomOperator):
         Downloads a file from MinIO to a temporary file.
 
         Args:
-        context (dict): The execution context.
-        minio_client: MinIO client instance.
-        file_path (str): Path to the file in MinIO.
+        - context (dict): The execution context.
+        - minio_client: MinIO client instance.
+        - file_path (str): Path to the file in MinIO.
 
         Returns:
-        str: Path to the downloaded temporary file.
+        - str: Path to the downloaded temporary file.
         """
         try:
-            with tempfile.NamedTemporaryFile(suffix='.mp4') as temp_file:
+            file_data = minio_client.get_object(self.minio_bucket_name, file_path)
+            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
                 temp_file_path = temp_file.name
-                minio_client.fget_object(
-                    bucket_name=self.minio_bucket_name,
-                    object_name=file_path,
-                    file_path=temp_file_path
-                )
-                self._log_to_mongodb(f"Downloaded file '{file_path}' from MinIO to temporary file", context, "INFO")
-                return temp_file_path
+                temp_file.write(file_data.read())
+
+            self._log_to_mongodb(f"Downloaded file '{file_path}' from MinIO to temporary file", context, "INFO")
+            return temp_file_path
+
         except Exception as e:
             error_message = f"Error downloading file '{file_path}' from MinIO: {str(e)}"
             self._log_to_mongodb(error_message, context, "ERROR")
             raise e
-        
+
+
     def _update_transcribed_text(self, context, meeting_id, combined_text):
         """
         Updates the 'transcribed_text' field in MongoDB for a given meeting ID.
@@ -198,7 +199,7 @@ class TranscriptionOperator(BaseCustomOperator):
         dict: A dictionary containing the meeting_id.
         """
         # Log the start of the execution
-        self._log_to_mongodb(f"Starting execution of VideoTranscriptionOperator", context, "INFO")
+        self._log_to_mongodb(f"Starting execution of TranscriptionOperator", context, "INFO")
 
         # Get the configuration passed to the DAG from the execution context
         dag_run_conf = context['dag_run'].conf
