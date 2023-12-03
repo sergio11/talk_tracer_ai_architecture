@@ -1,5 +1,5 @@
-# Use the official Python 3.8 image as the base
-FROM python:3.8
+# Use the official Python 3.11.6 image as the base
+FROM python:3.11.6
 
 # Label for Dockerfile maintenance information
 LABEL maintainer="Sergio Sánchez Sánchez"
@@ -23,16 +23,22 @@ WORKDIR ${AIRFLOW_USER_HOME}
 COPY ./packages/requirements.txt packages/requirements.txt
 COPY ./script/entrypoint.sh entrypoint.sh
 COPY ./config/airflow.cfg airflow.cfg
+COPY ./packages/local/ /packages/local/
 
 # Install additional Python dependencies
 RUN pip install -r ./packages/requirements.txt
 
 # Install dos2unix to remove carriage return characters
-# Install ncat (an alternative to netcat), curl, libsndfile1 and ffmpeg
-RUN apt-get update && apt-get install -y ncat curl dos2unix libsndfile1 ffmpeg
+# Install ncat (an alternative to netcat), curl, libsndfile1
+RUN apt-get update && apt-get install -y ncat curl dos2unix libsndfile1
 
 # Run dos2unix on script files to remove carriage return characters
 RUN dos2unix entrypoint.sh
+
+# Install all local packages
+RUN for package in /packages/local/*; do \
+        pip install -e $package; \
+    done
 
 # Change permissions
 RUN chmod +x entrypoint.sh
