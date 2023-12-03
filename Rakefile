@@ -45,7 +45,7 @@ namespace :talktracerai do
     desc "Create Apache Airflow Users"
     task :create_apache_airflow_users do
         # Container name
-        container_name = "talk_tracer_ai_airflow_webserver"
+        container_name = "talk-tracer-ai-airflow-webserver"
         
         # Commands to create users
         create_admin_user_cmd = "docker exec #{container_name} airflow users create -r Admin -u dreamsoftware -e dreamsoftware@talktracerai.com -f Sergio -l Sánchez -p dreamsoftware00"
