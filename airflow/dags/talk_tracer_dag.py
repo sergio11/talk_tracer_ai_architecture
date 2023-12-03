@@ -22,6 +22,8 @@ with DAG('talk_tracer_dag', default_args=default_args, default_view="graph", sch
     GenerateSummaryOperator = operators_module.GenerateSummaryOperator
     operators_module = importlib.import_module('operators.translation_operator')
     TranslationOperator = operators_module.TranslationOperator
+    operators_module = importlib.import_module('operators.index_to_elasticsearch_operator')
+    IndexToElasticsearchOperator = operators_module.IndexToElasticsearchOperator
 
     # Define the task instances for each operator
 
@@ -75,5 +77,18 @@ with DAG('talk_tracer_dag', default_args=default_args, default_view="graph", sch
         target_languages=os.environ.get("TRANSLATION_TARGET_LANGUAGE").split(",")
     )
 
+    index_to_elasticsearch_operator = IndexToElasticsearchOperator(
+        task_id='index_to_elasticsearch_operator',
+        mongo_uri=os.environ.get("MONGO_URI"),
+        mongo_db=os.environ.get("MONGO_DB"),
+        mongo_db_collection=os.environ.get("MONGO_DB_COLLECTION"),
+        minio_endpoint=os.environ.get("MINIO_ENDPOINT"),
+        minio_access_key=os.environ.get("MINIO_ACCESS_KEY"),
+        minio_secret_key=os.environ.get("MINIO_SECRET_KEY"),
+        minio_bucket_name=os.environ.get("MINIO_BUCKET_NAME"),
+        elasticsearch_host=os.environ.get("ELASTICSEARCH_HOST"),
+        elasticsearch_index=os.environ.get("ELASTICSEARCH_INDEX")
+    )
+
     # Define task dependencies by chaining the tasks in sequence
-    transcription_task >> nlp_task >> summary_task >> translation_task 
+    transcription_task >> nlp_task >> summary_task >> translation_task >> index_to_elasticsearch_operator
