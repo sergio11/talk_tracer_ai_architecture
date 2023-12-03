@@ -1,0 +1,21 @@
+# IDEs
+.idea/
+.vscode/
+
+# Git
+.gitattributes
+
+# Python
+__pycache__/
+frozen-requirements.txt
+
+# Virtual Env
+venv/
+
+# PyPI
+dist/
+build/
+*.egg-info
+
+# Scripts
+run.bat

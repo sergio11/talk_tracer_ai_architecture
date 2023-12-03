@@ -176,6 +176,8 @@ services:
       - .env
     depends_on:
       - talk_tracer_ai_redis
+    volumes:
+      - ./airflow/packages:/usr/local/airflow/packages
     ports:
       - "9004:5555"
       - "9005:8080"
