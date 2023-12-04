@@ -12,6 +12,7 @@ minio==7.1.17
 spacy==3.7.2
 elasticsearch==7.17.9
 transformers==4.35.2
+torch==2.1.1
 moviepy==1.0.3
 numpy==1.24.4
 vaderSentiment==3.3.2
