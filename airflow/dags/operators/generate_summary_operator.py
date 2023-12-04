@@ -46,12 +46,15 @@ class GenerateSummaryOperator(BaseCustomOperator):
         self._log_to_mongodb(f"Starting execution of GenerateSummaryOperator", context, "INFO")
         # Get the configuration passed to the DAG from the execution context
         dag_run_conf = context['dag_run'].conf
-
+        
         # Get the meeting_id from the configuration
         meeting_id = dag_run_conf['meeting_id']
         self._log_to_mongodb(f"Received meeting_id: {meeting_id}", context, "INFO")
 
-        transcribed_text = self._get_transcribed_text_from_meeting_info(context, meeting_id)
+        meeting_info = self._get_meeting_info(context, meeting_id)
+        self._log_to_mongodb(f"Retrieved meeting from MongoDB: {meeting_id}", context, "INFO")
+
+        transcribed_text = self._get_transcribed_text_from_meeting_info(context, meeting_info)
 
         summarizer = pipeline("summarization", model="Falconsai/text_summarization")
 
