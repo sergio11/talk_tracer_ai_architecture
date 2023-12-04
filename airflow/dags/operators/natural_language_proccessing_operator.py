@@ -3,7 +3,6 @@ from bson import ObjectId
 from operators.base_custom_operator import BaseCustomOperator
 from airflow.utils.decorators import apply_defaults
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
-import spacy
 import numpy as np
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
@@ -71,7 +70,7 @@ class NaturalLanguageProccessingOperator(BaseCustomOperator):
         # Use CountVectorizer to find the most frequent expressions
         vectorizer = CountVectorizer(ngram_range=(1, 2))
         X = vectorizer.fit_transform(nouns_adjs)
-        vocab = vectorizer.get_feature_names()
+        vocab = vectorizer.get_feature_names_out()
         word_freq = Counter(dict(zip(vocab, np.asarray(X.sum(axis=0)).ravel())))
         most_common_words = word_freq.most_common(5)
 
@@ -177,7 +176,10 @@ class NaturalLanguageProccessingOperator(BaseCustomOperator):
         meeting_id = context['dag_run'].conf.get('meeting_id')
         self._log_to_mongodb(f"Received meeting_id: {meeting_id}", context, "INFO")
 
-        transcribed_text = self._get_transcribed_text_from_meeting_info(context, meeting_id)
+        meeting_info = self._get_meeting_info(context, meeting_id)
+        self._log_to_mongodb(f"Retrieved meeting from MongoDB: {meeting_id}", context, "INFO")
+
+        transcribed_text = self._get_transcribed_text_from_meeting_info(context, meeting_info)
 
         nlp = self._load_spacy_model()
         
@@ -193,6 +195,8 @@ class NaturalLanguageProccessingOperator(BaseCustomOperator):
         self._log_to_mongodb("Extracting most frequent expressions...", context, "INFO")
         frequent_expressions = self._extract_most_frequent_expressions(nlp, transcribed_text)
 
+          # Extract sentiment phrases using VADER Sentiment
+        self._log_to_mongodb("Extracting sentiment phrases...", context, "INFO")
         most_positive, most_negative = self._extract_sentiment_phrases(nlp, transcribed_text, num_phrases=3)
 
         # Update Named Entities and Key Phrases in MongoDB document
