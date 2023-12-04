@@ -60,6 +60,8 @@ class IndexToElasticsearchOperator(BaseCustomOperator):
             Expected keys:
             - 'transcribed_text' (str): The transcribed text from the meeting.
             - 'summary' (str): Summary of the meeting.
+            - 'transcription_translations' (dict): Translations of the transcribed text.
+            - 'summary_translations' (dict): Translations of the summary.
 
         Raises:
         - Exception: If there's an issue indexing meeting information to Elasticsearch.
@@ -68,6 +70,8 @@ class IndexToElasticsearchOperator(BaseCustomOperator):
         document = {
             'transcribed_text': meeting_info.get('transcribed_text', ''),
             'summary': meeting_info.get('summary', ''),
+            'transcription_translations': meeting_info.get('transcription_translations', {}),
+            'summary_translations': meeting_info.get('summary_translations', {}),
         }
         es.index(index=self.elasticsearch_index, doc_type='_doc', body=document)
 
