@@ -179,7 +179,7 @@ class NaturalLanguageProccessingOperator(BaseCustomOperator):
 
         transcribed_text = self._get_transcribed_text_from_meeting_info(context, meeting_id)
 
-        nlp = spacy.load("en_core_web_sm")
+        nlp = self._load_spacy_model()
         
         # Extract key phrases using TF-IDF
         self._log_to_mongodb("Extracting key phrases using TF-IDF...", context, "INFO")

@@ -1,11 +1,9 @@
-import os
 import tempfile
 from bson import ObjectId
 from operators.base_custom_operator import BaseCustomOperator
 from airflow.utils.decorators import apply_defaults
 from moviepy.editor import AudioFileClip
 import speech_recognition as sr
-import spacy
 
 class TranscriptionOperator(BaseCustomOperator):
     """
@@ -145,6 +143,9 @@ class TranscriptionOperator(BaseCustomOperator):
                 text = self._transcribe_segment(context, recognizer, audio_segment, language)
                 if text:
                     transcribed_texts.append(text)
+                    self._log_to_mongodb(f"Segment {i + 1} of {num_segments} transcribed successfully.", context, "INFO")
+                else:
+                    self._log_to_mongodb(f"Failed to transcribe segment {i + 1} of {num_segments}.", context, "ERROR")
 
         combined_text = ' '.join(transcribed_texts)
         return combined_text
@@ -159,7 +160,8 @@ class TranscriptionOperator(BaseCustomOperator):
         Returns:
         - str: The corrected transcript with appropriate punctuation.
         """
-        nlp = spacy.load("en_core_web_sm")
+
+        nlp = self._load_spacy_model()
         # Process the text with spaCy
         doc = nlp(transcript)
 

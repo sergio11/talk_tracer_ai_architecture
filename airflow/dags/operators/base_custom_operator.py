@@ -4,6 +4,7 @@ from airflow.utils.decorators import apply_defaults
 from pymongo import MongoClient
 from minio import Minio
 from datetime import datetime
+import spacy
 
 class BaseCustomOperator(BaseOperator):
     @apply_defaults
@@ -203,3 +204,19 @@ class BaseCustomOperator(BaseOperator):
             raise Exception(error_message)
 
         return summary
+    
+
+    def _load_spacy_model(self):
+        """
+        Load the spaCy model 'en_core_web_sm' if available, otherwise load it.
+        
+        Returns:
+        - spacy.Language: The spaCy language model instance.
+        """
+        try:
+            nlp = spacy.load("en_core_web_sm")
+        except OSError:
+            # If the model is not available, download and load it
+            spacy.cli.download("en_core_web_sm")
+            nlp = spacy.load("en_core_web_sm")
+        return nlp
