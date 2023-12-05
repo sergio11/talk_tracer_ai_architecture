@@ -65,6 +65,11 @@ This section provides a visual walkthrough of key components instrumental to the
 
 Apache Airflow's web interface grants access to monitor DAG (Directed Acyclic Graph) execution statuses and perform administrative tasks. It serves as a centralized hub for managing workflows efficiently.
 
+![platform picture](doc/screenshots/screenshot_1.PNG)
+![platform picture](doc/screenshots/screenshot_4.PNG)
+![platform picture](doc/screenshots/screenshot_6.PNG)
+![platform picture](doc/screenshots/screenshot_7.PNG)
+
 ### Celery Flower
 
 Celery Flower is a web-based monitoring tool tailored for overseeing Celery task queues. With its user-friendly interface, it facilitates real-time tracking of task statuses, worker activities, and performance metrics. Celery Flower empowers efficient management of tasks, ensuring seamless operation within Python applications.
