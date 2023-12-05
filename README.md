@@ -59,52 +59,19 @@ TalkTracerAI leverages state-of-the-art NLP models and cloud-based storage to ef
 
 **Empower your meetings with TalkTracerAI and transform the way you derive insights from discussions!** 🌟✨
 
-### Architecture Elements:
+### Architecture Elements Overview
 
-#### Apache Airflow
-
-Apache Airflow plays a pivotal role in TalkTracerAI's operation, orchestrating a Directed Acyclic Graph (DAG) that manages the workflow. This DAG automates transcription, NLP analysis, summary generation, translations, and indexing tasks, ensuring a seamless and efficient process flow.
-
-#### Flask
-
-Flask serves as the backbone of TalkTracerAI's backend infrastructure, providing a lightweight and robust web microframework for constructing the backend server and RESTful APIs. These APIs facilitate interactions between various components, allowing seamless communication and data exchange.
-
-#### Elasticsearch
-
-Employed for indexing processed meeting text with NLP, Elasticsearch enables precise searches by key terms and significantly enhances data retrieval efficiency.
-
-#### MongoDB
-
-Utilized to store and model meeting data as BSON documents, MongoDB offers flexibility in data structure and storage, enabling efficient data management and retrieval.
-
-#### MinIO
-
-MinIO functions as the cloud-based object storage solution for meeting audio files, ensuring high-performance, scalability, and reliability in handling large volumes of data.
-
-#### HAProxy
-
-HAProxy serves a dual role, implementing load balancing patterns for multiple MinIO instances and managing Flask services of the TalkTracerAI API. This ensures system availability, performance, and effective load distribution.
-
-#### Redis
-
-Redis acts as an in-memory data structure store, optimizing data retrieval and caching to enhance TalkTracerAI's system performance.
-
-#### Celery Flower
-
-Celery Flower serves as a real-time monitoring tool for Celery, providing a web-based user interface to monitor and manage Celery clusters, ensuring smooth task queue operations.
-
-#### PostgreSQL
-
-PostgreSQL functions as the primary relational database for storing structured data in Apache Airflow, guaranteeing robustness and reliability in managing workflow metadata.
-
-#### Hugging Face Model - Fine-Tuned T5 Small for Text Summarization
-
-Leveraging the "t5-small" model fine-tuned for text summarization tasks using PyTorch, TalkTracerAI generates concise and coherent summaries of meeting transcripts.
-
-#### Other Technologies
-
-Additional technologies like scikit-learn, spaCy, vaderSentiment, and PyTorch play essential roles in conducting machine learning, NLP tasks, and sentiment analysis, providing a comprehensive and insightful analysis of meeting conversations.
-
+- **Apache Airflow:** Apache Airflow plays a pivotal role in TalkTracerAI's operation, orchestrating a Directed Acyclic Graph (DAG) that manages the workflow. This DAG automates transcription, NLP analysis, summary generation, translations, and indexing tasks, ensuring a seamless and efficient process flow.
+- **Flask:** Flask serves as the backbone of TalkTracerAI's backend infrastructure, providing a lightweight and robust web microframework for constructing the backend server and RESTful APIs. These APIs facilitate interactions between various components, allowing seamless communication and data exchange.
+- **Elasticsearch:** Employed for indexing processed meeting text with NLP, Elasticsearch enables precise searches by key terms and significantly enhances data retrieval efficiency.
+- **MongoDB:** Utilized to store and model meeting data as BSON documents, MongoDB offers flexibility in data structure and storage, enabling efficient data management and retrieval.
+- **MinIO:** MinIO functions as the cloud-based object storage solution for meeting audio files, ensuring high-performance, scalability, and reliability in handling large volumes of data.
+- **HAProxy:** HAProxy serves a dual role, implementing load balancing patterns for multiple MinIO instances and managing Flask services of the TalkTracerAI API. This ensures system availability, performance, and effective load distribution.
+- **Redis:** Redis acts as an in-memory data structure store, optimizing data retrieval and caching to enhance TalkTracerAI's system performance.
+- **Celery Flower:** Celery Flower serves as a real-time monitoring tool for Celery, providing a web-based user interface to monitor and manage Celery clusters, ensuring smooth task queue operations.
+- **PostgreSQL:** PostgreSQL functions as the primary relational database for storing structured data in Apache Airflow, guaranteeing robustness and reliability in managing workflow metadata.
+- **Hugging Face Model - Fine-Tuned T5 Small for Text Summarization:** Leveraging the "t5-small" model fine-tuned for text summarization tasks using PyTorch, TalkTracerAI generates concise and coherent summaries of meeting transcripts.
+- **Other Technologies:** Additional technologies like scikit-learn, spaCy, vaderSentiment, and PyTorch play essential roles in conducting machine learning, NLP tasks, and sentiment analysis, providing a comprehensive and insightful analysis of meeting conversations.
 
 ## Tools screenshots
 
