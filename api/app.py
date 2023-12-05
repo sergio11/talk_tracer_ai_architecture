@@ -9,6 +9,7 @@ from pymongo import MongoClient
 import os
 import requests
 from minio_helpers import store_file_in_minio
+from elasticsearch import Elasticsearch
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -38,6 +39,9 @@ MINIO_ACCESS_KEY = os.environ.get("MINIO_ACCESS_KEY")
 MINIO_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY")
 MINIO_BUCKET_NAME = os.environ.get("MINIO_BUCKET_NAME")
 
+ELASTICSEARCH_HOST = os.environ.get("ELASTICSEARCH_HOST")
+ELASTICSEARCH_INDEX = os.environ.get("ELASTICSEARCH_INDEX")
+
 
 # Connect to MongoDB using the provided URI
 mongo_client = MongoClient(MONGO_URI)
@@ -46,6 +50,8 @@ db_collection = db[MONGO_COLLECTION]
 
 # Create a Flask application
 app = Flask(__name__)
+
+elasticsearch_client = Elasticsearch(ELASTICSEARCH_HOST)
 
 def _create_response(status, code, message, data=None):
     response_data = {
@@ -156,6 +162,32 @@ def _trigger_airflow_dag(dag_run_conf):
     )
     return response
 
+def _get_meeting_info_with_urls(meeting_info):
+    meeting_data = {
+        "id": str(meeting_info["_id"]),
+        "title": meeting_info["title"],
+        "description": meeting_info.get("description", ""),
+        "planned_date": meeting_info.get("logical_date", ""),
+    }
+    return meeting_data
+
+# API endpoint for retrieving a meeting by ID
+@app.route(f"{BASE_URL_PREFIX}/<string:meeting_id>", methods=['GET'])
+def get_meeting_by_id(meeting_id):
+    try:
+        meeting_info = db_collection.find_one({"_id": ObjectId(meeting_id)})
+        if meeting_info:
+            meeting_data = _get_meeting_info_with_urls(meeting_info)
+            response_data = _create_response("success", 200, "Meeting retrieved successfully", meeting_data)
+            return response_data
+        else:
+            response_data = _create_response("error", 404, "Meeting not found")
+            return response_data
+    except Exception as e:
+        logger.error(f"An error occurred: {str(e)}")
+        response_data = _create_response("error", 500, "An internal server error occurred")
+        return response_data
+
 # Endpoint to receive the audio file, title, and description
 @app.route(f"{BASE_URL_PREFIX}/create", methods=['POST'])
 def create_meeting():
@@ -254,6 +286,93 @@ def create_meeting():
         logger.error(f"An error occurred during file proccessing : {str(e)}")
         db_collection.delete_one({"_id": ObjectId(meeting_id)})
         return _create_response("Error", 500, "An error occurred during file proccessing")
+    
+
+# API endpoint for listing all meetings paginated, descending by date
+@app.route(f"{BASE_URL_PREFIX}/paginated", methods=['GET'])
+def list_meetings():
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+
+        meetings = list(db_collection.find().sort([("logical_date", -1)]).skip((page - 1) * per_page).limit(per_page))
+        if meetings:
+            meeting_list = []
+            for meeting in meetings:
+                meeting_data = _get_meeting_info_with_urls(meeting)
+                meeting_list.append(meeting_data)
+            response_data = _create_response("success", 200, "Meetings retrieved successfully.", {"meetings": meeting_list})
+            return response_data
+        else:
+            response_data = _create_response("error", 404, "No meetings found", {"meetings": []})
+            return response_data
+    except Exception as e:
+        logger.error(f"An error occurred: {str(e)}")
+        response_data = _create_response("error", 500, "An internal server error occurred")
+        return response_data
+
+
+@app.route(f"{BASE_URL_PREFIX}/<string:meeting_id>", methods=['DELETE'])
+def delete_meeting_by_id(meeting_id):
+    try:
+        meeting_info = db_collection.find_one({"_id": ObjectId(meeting_id)})
+        if meeting_info:
+            db_collection.delete_one({"_id": ObjectId(meeting_id)})
+            meeting_data = _get_meeting_info_with_urls(meeting_info)
+            response_data = _create_response("success", 200, "Meetings deleted successfully", {"meeting_info": meeting_data})
+            return response_data
+        else:
+            response_data = _create_response("error", 404, "Meeting not found", {"meeting_info": None})
+            return response_data
+    except Exception as e:
+        logger.error(f"An error occurred: {str(e)}")
+        response_data = _create_response("error", 500, "An internal server error occurred")
+        return response_data
+    
+@app.route(f"{BASE_URL_PREFIX}/search", methods=['GET'])
+def search_meetings():
+    try:
+        # Get the search term from the request
+        search_term = request.args.get('q')
+        
+        if not search_term:
+            return _create_response("error", 400, "Missing 'q' parameter in the request.")
+
+        headers = {"Content-Type": "application/json"}
+        # Use Elasticsearch to search for meetings with the given search term
+        search_results = elasticsearch_client.search(
+            index=ELASTICSEARCH_INDEX,
+            body={
+                "query": {
+                    "bool": {
+                        "should": [
+                            { "match": { "transcribed_text": search_term }},
+                            { "match": { "summary": search_term }}
+                        ]
+                    }
+                }
+            },
+            headers=headers
+        )
+
+        # Extract the meeting IDs from the search results
+        meeting_ids = [hit["_source"]["meeting_id"] for hit in search_results["hits"]["hits"]]
+
+        # Retrieve detailed information for the matching meetings
+        matching_meetings = []
+        for meeting_id in meeting_ids:
+            meeting_info = db_collection.find_one({"_id": ObjectId(meeting_id)})
+            if meeting_info:
+                meeting_data = _get_meeting_info_with_urls(meeting_info)
+                matching_meetings.append(meeting_data)
+
+        response_data = _create_response("success", 200, "Meetings retrieved successfully", {"matching_meetings": matching_meetings})
+        return response_data
+    except Exception as e:
+        logger.error(f"An error occurred: {str(e)}")
+        response_data = _create_response("error", 500, "An internal server error occurred")
+        return response_data
+    
 
 @app.errorhandler(Exception)
 def handle_error(e):
