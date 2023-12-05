@@ -78,11 +78,8 @@ class IndexToElasticsearchOperator(BaseCustomOperator):
     def execute(self, context):
         self._log_to_mongodb(f"Starting execution of IndexToElasticsearchOperator", context, "INFO")
 
-       # Get the configuration passed to the DAG from the execution context
-        dag_run_conf = context['dag_run'].conf
-
         # Get the meeting_id from the configuration
-        meeting_id = dag_run_conf['meeting_id']
+        meeting_id = context['dag_run'].conf.get('meeting_id')
         self._log_to_mongodb(f"Received meeting_id: {meeting_id}", context, "INFO")
 
         meeting_info = self._get_meeting_info(context, meeting_id)
@@ -92,7 +89,7 @@ class IndexToElasticsearchOperator(BaseCustomOperator):
         self._index_meeting_info_to_elasticsearch(meeting_info)
 
         # Update the document in MongoDB
-        self._update_meeting_in_mongodb(meeting_id)
+        self._update_meeting_in_mongodb(context, meeting_id)
 
         return {"meeting_id": str(meeting_id)}
 
