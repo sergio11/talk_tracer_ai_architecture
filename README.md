@@ -57,31 +57,39 @@ TalkTracerAI leverages state-of-the-art NLP models and cloud-based storage to ef
 
 **Empower your meetings with TalkTracerAI and transform the way you derive insights from discussions!** 🌟✨
 
-
 ## Tools screenshots
-In this section some details of the components that make the project possible will be shown and explained.
+
+This section provides a visual walkthrough of key components instrumental to the functionality of the project, offering insights and explanations into their roles within the system.
 
 ### Apache Ariflow
 
-You can access the web tool provided by Apache Airflow to check the execution status of the DAG and perform some administrative tasks.
+Apache Airflow's web interface grants access to monitor DAG (Directed Acyclic Graph) execution statuses and perform administrative tasks. It serves as a centralized hub for managing workflows efficiently.
 
 ### Celery Flower
 
-Celery Flower is a web-based tool designed for monitoring and managing tasks in a Celery task queue. Its purpose is to provide a user-friendly, visual interface to keep track of task statuses, worker activity, and real-time statistics. Flower enables you to efficiently oversee and control Celery tasks, ensuring smooth operation in your Python applications.
+Celery Flower is a web-based monitoring tool tailored for overseeing Celery task queues. With its user-friendly interface, it facilitates real-time tracking of task statuses, worker activities, and performance metrics. Celery Flower empowers efficient management of tasks, ensuring seamless operation within Python applications.
 
 ### MongDB
 
-A collection has been configured to record in detail all the logs generated during the execution of the DAG, in this way it is possible to identify errors or bad behavior later, given that the logs in Apache Airflow are difficult to check.
+Configured to capture detailed logs during DAG execution, MongoDB hosts a collection for comprehensive record-keeping. This setup allows for thorough error identification and behavior analysis, overcoming the challenges of inspecting logs within Apache Airflow.
 
 ### HAProxy
 
-It is possible to monitor the status of the replicas of the different services, each HAproxy in charge of managing each group of replicas provides a web interface to consult their status, as can be seen in the following screenshots.
+HAProxy instances manage service replicas and provide web interfaces for monitoring their status. Each HAProxy instance oversees a group of replicas, offering a convenient method to check their operational status, as depicted in the following screenshots.
 
 ### Docker Compose
 
-The entire deployment of the project architecture has been unified in a single Docker Compose configuration
+The entire project architecture deployment is unified within a single Docker Compose configuration, streamlining the setup and management of the project's infrastructure.
 
-### Postman Collections
+### Postman Collections for TalkTracerAI Meeting Flow Orchestrator
+An exclusive Postman collection is available for operating with the TalkTracerAI Meeting Flow Orchestrator service. This collection facilitates various functionalities, including:
+
+- Uploading audio files along with metadata for meeting analysis.
+- Querying generated meetings.
+- Conducting specific term-based searches within meetings.
+- Deleting analyzed meetings from the system.
+- 
+This dedicated Postman collection simplifies interaction with the TalkTracerAI Meeting Flow Orchestrator service, enabling seamless execution of diverse operations for meeting analysis and management.
 
 ## Task Descriptions
 
