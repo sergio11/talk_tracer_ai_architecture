@@ -51,7 +51,7 @@ class IndexToElasticsearchOperator(BaseCustomOperator):
             self._log_to_mongodb(error_message, context, "WARNING")
             raise Exception(error_message)
         
-    def _index_meeting_info_to_elasticsearch(self, meeting_info):
+    def _index_meeting_info_to_elasticsearch(self, meeting_id, meeting_info):
         """
         Indexes meeting information to Elasticsearch.
 
@@ -68,6 +68,7 @@ class IndexToElasticsearchOperator(BaseCustomOperator):
         """
         es = Elasticsearch(self.elasticsearch_host)
         document = {
+            'meeting_id': meeting_id,
             'transcribed_text': meeting_info.get('transcribed_text', ''),
             'summary': meeting_info.get('summary', ''),
             'transcription_translations': meeting_info.get('transcription_translations', {}),
@@ -86,7 +87,7 @@ class IndexToElasticsearchOperator(BaseCustomOperator):
         self._log_to_mongodb(f"Retrieved meeting from MongoDB: {meeting_id}", context, "INFO")
 
         # Index the meeting info in Elasticsearch
-        self._index_meeting_info_to_elasticsearch(meeting_info)
+        self._index_meeting_info_to_elasticsearch(meeting_id, meeting_info)
 
         # Update the document in MongoDB
         self._update_meeting_in_mongodb(context, meeting_id)
