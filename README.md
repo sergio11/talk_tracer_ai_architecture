@@ -56,3 +56,91 @@ TalkTracerAI is an intelligent tool designed to transcribe, analyze, and summari
 TalkTracerAI leverages state-of-the-art NLP models and cloud-based storage to efficiently process audio recordings, extract crucial information, and deliver insightful summaries. It seamlessly integrates with MongoDB for data storage and retrieval and employs MinIO for cloud-based file storage, ensuring secure and scalable handling of meeting data.
 
 **Empower your meetings with TalkTracerAI and transform the way you derive insights from discussions!** 🌟✨
+
+
+## Tools screenshots
+In this section some details of the components that make the project possible will be shown and explained.
+
+### Apache Ariflow
+
+You can access the web tool provided by Apache Airflow to check the execution status of the DAG and perform some administrative tasks.
+
+### Celery Flower
+
+Celery Flower is a web-based tool designed for monitoring and managing tasks in a Celery task queue. Its purpose is to provide a user-friendly, visual interface to keep track of task statuses, worker activity, and real-time statistics. Flower enables you to efficiently oversee and control Celery tasks, ensuring smooth operation in your Python applications.
+
+### MongDB
+
+A collection has been configured to record in detail all the logs generated during the execution of the DAG, in this way it is possible to identify errors or bad behavior later, given that the logs in Apache Airflow are difficult to check.
+
+### HAProxy
+
+It is possible to monitor the status of the replicas of the different services, each HAproxy in charge of managing each group of replicas provides a web interface to consult their status, as can be seen in the following screenshots.
+
+### Docker Compose
+
+The entire deployment of the project architecture has been unified in a single Docker Compose configuration
+
+### Postman Collections
+
+## Task Descriptions
+
+The following table provides descriptions and examples of tasks available in the Rakefile for deploying and managing your environment.
+
+| Rake Task                                           | Purpose                                                                                                          |
+|-----------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| `talktracerai:deploy`                               | Deploys the architecture and starts all necessary services and daemons for proper functionality.                |
+| `talktracerai:undeploy`                             | Undeploys the architecture.                                                                                       |
+| `talktracerai:start`                                | Starts the containers.                                                                                            |
+| `talktracerai:stop`                                 | Stops the containers.                                                                                             |
+| `talktracerai:status`                               | Displays the status of the containers.                                                                            |
+| `talktracerai:create_apache_airflow_users`           | Creates users in Apache Airflow.                                                                                  |
+| `talktracerai:build_and_push_airflow_image`          | Builds and pushes the Apache Airflow Docker image to DockerHub.                                                   |
+| `talktracerai:build_and_push_meeting_flow_orchestrator_api_image` | Builds and pushes the TalkTracerAI MeetingFlow Orchestrator API Docker image to DockerHub.    |
+| `talktracerai:clean_environment`                     | Cleans the environment by removing Docker images and volumes.                                                      |
+| `talktracerai:check_docker`                         | Checks the presence and accessibility of Docker and Docker Compose in the specified path.                         |
+| `talktracerai:login`                                | Authenticates with existing Docker credentials.                                                                    |
+| `talktracerai:check_deployment_file`                 | Checks the existence of the deployment file "docker-compose.yml".                                                 |
+
+
+## Services and Ports Configuration
+
+The following Docker Compose configuration defines various services required for the Talk Tracer AI platform. Each service encapsulates a specific functionality within the system and is orchestrated to work together within a unified environment. These services encompass diverse components such as databases, message brokers, API services, orchestration tools, and more.
+
+This section outlines the services along with their corresponding ports explicitly defined for communication or accessibility. Ports play a vital role in establishing communication channels between different services or enabling external access to specific functionalities within the Talk Tracer AI ecosystem.
+
+Understanding the designated services and their associated ports is crucial for comprehending how different components interact and ensuring proper configuration for seamless operation and external interaction with the platform.
+
+| Service                                         | Port(s)                                              |
+|--------------------------------------------------|------------------------------------------------------|
+| talk_tracer_ai_elasticsearch                     | -                                                    |
+| talk_tracer_ai_minio1                            | -                                                    |
+| talk_tracer_ai_minio2                            | -                                                    |
+| talk_tracer_ai_minio3                            | -                                                    |
+| talk_tracer_ai_haproxy                           | 9000, 1936                                          |
+| talk_tracer_ai_mongo                             | 27017                                                |
+| talk_tracer_ai_mongo_express                     | 9001                                                 |
+| talk_tracer_ai_redis                             | -                                                    |
+| talk_tracer_ai_postgres                          | 5432                                                 |
+| talk_tracer_ai_pgadmin                           | 9002                                                 |
+| talk_tracer_ai_airflow_webserver                 | 9003                                                 |
+| talk_tracer_ai_celery_flower                     | 9004, 9005, 9006                                     |
+| talk_tracer_ai_airflow_scheduler                  | 9007                                                 |
+| talk_tracer_ai_airflow_worker_1                  | -                                                    |
+| talk_tracer_ai_airflow_worker_2                  | -                                                    |
+| talk_tracer_ai_meeting_flow_orchestrator_api_1    | -                                                    |
+| talk_tracer_ai_meeting_flow_orchestrator_api_2    | -                                                    |
+| talk_tracer_ai_meeting_flow_orchestrator_api_3    | -                                                    |
+| talk_tracer_ai_meeting_flow_orchestrator_haproxy | 9008, 1937                                           |
+
+## Contribution
+Contributions to LyricWave are highly encouraged! If you're interested in adding new features, resolving bugs, or enhancing the project's functionality, please feel free to submit pull requests.
+
+## License
+This project is licensed under the [MIT License](LICENSE).
+
+## Credits
+
+TalkTracerAI is developed and maintained by **Sergio Sánchez Sánchez** (Dream Software). Special thanks to the open-source community and the contributors who have made this project possible.
+If you have any questions, feedback, or suggestions, feel free to reach out at dreamsoftware92@gmail.com.
+
