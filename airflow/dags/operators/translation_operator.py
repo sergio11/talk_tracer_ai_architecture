@@ -26,8 +26,9 @@ class TranslationOperator(BaseCustomOperator):
         Returns:
         A string containing the translated text.
         """
+        language_code = target_language.split('-')[0]
         translator = Translator()
-        translation = translator.translate(text, dest=target_language)
+        translation = translator.translate(text, dest=language_code)
         return translation.text
     
     def _update_translations_in_mongodb(self, context, meeting_id, transcription_translations, summary_translations):
