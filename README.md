@@ -61,7 +61,7 @@ TalkTracerAI leverages state-of-the-art NLP models and cloud-based storage to ef
 
 This section provides a visual walkthrough of key components instrumental to the functionality of the project, offering insights and explanations into their roles within the system.
 
-### Apache Ariflow
+### Apache Airflow
 
 Apache Airflow's web interface grants access to monitor DAG (Directed Acyclic Graph) execution statuses and perform administrative tasks. It serves as a centralized hub for managing workflows efficiently.
 
@@ -74,19 +74,30 @@ Apache Airflow's web interface grants access to monitor DAG (Directed Acyclic Gr
 
 Celery Flower is a web-based monitoring tool tailored for overseeing Celery task queues. With its user-friendly interface, it facilitates real-time tracking of task statuses, worker activities, and performance metrics. Celery Flower empowers efficient management of tasks, ensuring seamless operation within Python applications.
 
-### MongDB
+![platform picture](doc/screenshots/screenshot_10.PNG)
+![platform picture](doc/screenshots/screenshot_12.PNG)
+
+### MongoDB
 
 Configured to capture detailed logs during DAG execution, MongoDB hosts a collection for comprehensive record-keeping. This setup allows for thorough error identification and behavior analysis, overcoming the challenges of inspecting logs within Apache Airflow.
+
+![platform picture](doc/screenshots/screenshot_3.PNG)
 
 ### HAProxy
 
 HAProxy instances manage service replicas and provide web interfaces for monitoring their status. Each HAProxy instance oversees a group of replicas, offering a convenient method to check their operational status, as depicted in the following screenshots.
 
+![platform picture](doc/screenshots/screenshot_9.PNG)
+![platform picture](doc/screenshots/screenshot_11.PNG)
+
 ### Docker Compose
 
 The entire project architecture deployment is unified within a single Docker Compose configuration, streamlining the setup and management of the project's infrastructure.
 
+![platform picture](doc/screenshots/screenshot_8.PNG)
+
 ### Postman Collections for TalkTracerAI Meeting Flow Orchestrator
+
 An exclusive Postman collection is available for operating with the TalkTracerAI Meeting Flow Orchestrator service. This collection facilitates various functionalities, including:
 
 - Uploading audio files along with metadata for meeting analysis.
