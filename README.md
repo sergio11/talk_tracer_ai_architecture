@@ -83,7 +83,7 @@ Explore these instances and discover how TalkTracerAI can turn any conversation 
 ### Friday Meeting
 
 
-```json
+```
 {
     _id: ObjectId('656f041382875dca124c80cf'),
     title: 'Friday Meeting',
