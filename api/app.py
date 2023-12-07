@@ -8,7 +8,7 @@ from flask import Flask, request, jsonify
 from pymongo import MongoClient
 import os
 import requests
-from minio_helpers import store_file_in_minio
+from minio_helpers import get_minio_client, store_file_in_minio
 from elasticsearch import Elasticsearch
 
 # Configure logging
@@ -163,13 +163,31 @@ def _trigger_airflow_dag(dag_run_conf):
     return response
 
 def _get_meeting_info_with_urls(meeting_info):
-    meeting_data = {
-        "id": str(meeting_info["_id"]),
-        "title": meeting_info["title"],
-        "description": meeting_info.get("description", ""),
-        "planned_date": meeting_info.get("logical_date", ""),
-    }
-    return meeting_data
+    file_id = str(meeting_info.get("file_id", ""))
+    download_url = f"{BASE_URL_PREFIX}/file/{file_id}"
+    meeting_id = str(meeting_info.get("_id"))
+    modified_meeting_info = {key: value for key, value in meeting_info.items() if key != "_id"}
+    modified_meeting_info["_id"] = meeting_id
+    modified_meeting_info["download_url"] = download_url
+    return modified_meeting_info
+
+@app.route(f"{BASE_URL_PREFIX}/file/<string:file_id>", methods=['GET'])
+def get_file_from_minio(file_id):
+    try:
+        minio_client = get_minio_client(
+            minio_endpoint=MINIO_ENDPOINT,
+            minio_access_key=MINIO_ACCESS_KEY,
+            minio_secret_key=MINIO_SECRET_KEY,
+            minio_bucket_name=MINIO_BUCKET_NAME
+        )
+        # Retrieve the file with the given file_id from MinIO
+        file_stream = minio_client.get_object(
+            bucket_name=MINIO_BUCKET_NAME,
+            object_name=file_id
+        )
+        return file_stream.read(), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # API endpoint for retrieving a meeting by ID
 @app.route(f"{BASE_URL_PREFIX}/<string:meeting_id>", methods=['GET'])
