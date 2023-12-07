@@ -1,56 +1,156 @@
 {
-    "info": {
-      "_postman_id": "c13e85c4-xxxx-xxxx-xxxx-5e4c18712675",
-      "name": "TalkTracerAI API",
-      "description": "TalkTracerAI is an NLP-based meeting analysis tool that transcribes, analyzes, and summarizes conversations, delivering valuable insights and enhancing productivity.",
-      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-    },
-    "item": [
-      {
-        "name": "Create Meeting",
-        "request": {
-          "method": "POST",
-          "header": [],
-          "body": {
-            "mode": "formdata",
-            "formdata": [
-              {
-                "key": "audio_file",
-                "type": "file",
-                "src": "/path/to/your/audio_file.mp3"
-              },
-              {
-                "key": "title",
-                "value": "Meeting Title",
-                "type": "text"
-              },
-              {
-                "key": "description",
-                "value": "Meeting Description",
-                "type": "text"
-              },
-              {
-                "key": "language",
-                "value": "English",
-                "type": "text"
-              }
-            ]
-          },
-          "url": {
-            "raw": "http://localhost:5000/api/create",
-            "protocol": "http",
-            "host": [
-              "localhost"
-            ],
-            "port": "5000",
-            "path": [
-              "api",
-              "create"
-            ]
-          }
+  "info": {
+    "_postman_id": "c13e85c4-xxxx-xxxx-xxxx-5e4c18712675",
+    "name": "TalkTracerAI API",
+    "description": "TalkTracerAI is an NLP-based meeting analysis tool that transcribes, analyzes, and summarizes conversations, delivering valuable insights and enhancing productivity.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Meeting",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "audio_file",
+              "type": "file",
+              "src": "/path/to/your/audio_file.mp3"
+            },
+            {
+              "key": "title",
+              "value": "Meeting Title",
+              "type": "text"
+            },
+            {
+              "key": "description",
+              "value": "Meeting Description",
+              "type": "text"
+            },
+            {
+              "key": "language",
+              "value": "en-US",
+              "type": "text"
+            }
+          ]
         },
-        "response": []
-      }
-    ]
-  }
-  
+        "url": {
+          "raw": "http://localhost:9008/api/meetings/create",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "9008",
+          "path": [
+            "api",
+            "meetings",
+            "create"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Meeting By ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:9008/api/meetings/<meeting_id>",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "9008",
+          "path": [
+            "api",
+            "meetings",
+            "<meeting_id>"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "List Meetings",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:9008/api/meetings/paginated?page=1&per_page=10",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "9008",
+          "path": [
+            "api",
+            "meetings",
+            "paginated"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "per_page",
+              "value": "10"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Meeting By ID",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:9008/api/meetings/<meeting_id>",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "9008",
+          "path": [
+            "api",
+            "meetings",
+            "<meeting_id>"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Search Meetings",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:9008/api/meetings/search?q=search_term",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "9008",
+          "path": [
+            "api",
+            "meetings",
+            "search"
+          ],
+          "query": [
+            {
+              "key": "q",
+              "value": "search_term"
+            }
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
