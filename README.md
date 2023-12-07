@@ -82,6 +82,8 @@ Explore these instances and discover how TalkTracerAI can turn any conversation 
 
 ### Friday Meeting
 
+[friday_meeting_full_audio](doc/examples/friday_meeting_full_audio.wav)
+
 
 ```
 {
