@@ -261,7 +261,10 @@ An exclusive Postman collection is available for operating with the TalkTracerAI
 - Querying generated meetings.
 - Conducting specific term-based searches within meetings.
 - Deleting analyzed meetings from the system.
-- 
+
+![platform picture](doc/screenshots/screenshot_2.PNG)
+![platform picture](doc/screenshots/screenshot_13.PNG)
+  
 This dedicated Postman collection simplifies interaction with the TalkTracerAI Meeting Flow Orchestrator service, enabling seamless execution of diverse operations for meeting analysis and management.
 
 ## Task Descriptions
