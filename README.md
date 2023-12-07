@@ -335,5 +335,6 @@ If you have any questions, feedback, or suggestions, feel free to reach out at d
 <img width="auto" src="https://profile-counter.glitch.me/talk_tracer_ai_architecture/count.svg" />
 
 ## Please Share & Star the repository to keep me motivated.
+  
   <a href = "https://github.com/sergio11/talk_tracer_ai_architecture/stargazers">
 
