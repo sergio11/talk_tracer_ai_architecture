@@ -26,6 +26,10 @@ With TalkTracerAI, your meetings turn into smart resources that drive better dec
 
 TalkTracerAI is an intelligent tool designed to transcribe, analyze, and summarize meeting conversations using cutting-edge Natural Language Processing (NLP) techniques. It empowers users to effortlessly extract key phrases, identify crucial entities, translate discussions into multiple languages, and generate concise summaries, offering a clear and comprehensive view of meeting outcomes. 💬📊
 
+## ⚠️ Disclaimer
+
+**TalkTracerAI** is an **educational project** designed to explore Natural Language Processing (NLP) techniques for meeting analysis. This tool is intended for **learning and research purposes**.
+
 ## More Details 📝
 
 For comprehensive information about this project, check out this [Medium article](https://medium.com/@sanchezsanchezsergio418/revolutionizing-workplace-productivity-with-ai-driven-meeting-insights-d3b2a4cf27a4).
