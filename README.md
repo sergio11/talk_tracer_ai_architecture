@@ -1,6 +1,6 @@
 # TalkTracerAI - 🌟 Empowering Productivity Through Meeting Insight. 📈💡
 
-<img width="300px" align="left" src="./doc/logo.PNG" />
+<img width="300px" align="left" src="./doc/talk_tracer_logo.webp" />
 
 Welcome to TalkTracerAI, an innovative solution aimed at enhancing productivity by providing comprehensive insights from meeting conversations. With TalkTracerAI, gain a deeper understanding of your discussions, extract meaningful information, and unlock valuable data-driven insights from meetings. 🚀🔍
 
@@ -26,9 +26,11 @@ With TalkTracerAI, your meetings turn into smart resources that drive better dec
 
 TalkTracerAI is an intelligent tool designed to transcribe, analyze, and summarize meeting conversations using cutting-edge Natural Language Processing (NLP) techniques. It empowers users to effortlessly extract key phrases, identify crucial entities, translate discussions into multiple languages, and generate concise summaries, offering a clear and comprehensive view of meeting outcomes. 💬📊
 
-## ⚠️ Disclaimer
+## ⚠️ Disclaimer  
 
-**TalkTracerAI** is an **educational project** designed to explore Natural Language Processing (NLP) techniques for meeting analysis. This tool is intended for **learning and research purposes**.
+**TalkTracerAI** is an **educational project** designed to explore Natural Language Processing (NLP) techniques for meeting analysis. This tool is intended for **learning and research purposes**.  
+
+The **logo and project name** were generated during a brainstorming session with AI, and any resemblance to existing names or brands is purely coincidental.  
 
 ## More Details 📝
 
